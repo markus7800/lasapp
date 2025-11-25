@@ -2,7 +2,7 @@
 
 # Language-Agnostic Static Analysis of Probabilistic Programs
 
-Replication package for [ASE2024 paper](https://dl.acm.org/doi/pdf/10.1145/3691620.3695031) with the same name.
+For replication package for [ASE2024 paper](https://dl.acm.org/doi/pdf/10.1145/3691620.3695031) see commit TODO.
 
 Overview:
 ```
