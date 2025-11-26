@@ -49,30 +49,3 @@ def handle_client(reader, writer, dispatcher):
         response = JSONRPCResponseManager.handle(message_str, dispatcher)
         # print('response:', response.json)
         write_transport_layer(writer, response.json)
-
-from typing import Dict, Tuple, Any
-from ast_utils.scoped_tree import ScopedTree
-_SESSION: Dict[str, Tuple[Any,ScopedTree]] = dict()
-
-def run_server(socket_name, dispatcher):
-    server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    server.bind(socket_name)
-    try:
-        while True:
-            server.listen(1)
-            sock, addr = server.accept()
-            print("Hello", sock)
-            reader = sock.makefile(mode='rb') # binary
-            writer = sock.makefile(mode='wb') # binary
-            handle_client(reader, writer, dispatcher)
-            reader.close()
-            writer.close()
-            sock.close()
-            _SESSION.clear()
-            print("Bye", sock)
-    except KeyboardInterrupt:
-        print("Interrupt server.")
-    finally:
-        print("Close server.")
-        server.close()
-        os.remove(socket_name)

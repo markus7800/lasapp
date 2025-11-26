@@ -1,14 +1,14 @@
 {
-	"name": "lsp-sample",
-	"description": "A language server example",
-	"author": "Microsoft Corporation",
+	"name": "lasapp",
+	"description": "Language Agnostic Static Analysis of Probabilistic Programs",
+	"author": "Markus Boeck",
 	"license": "MIT",
 	"version": "1.0.0",
+	"publisher": "",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Microsoft/vscode-extension-samples"
+		"url": "https://github.com/lasapp/lasapp"
 	},
-	"publisher": "vscode-samples",
 	"categories": [],
 	"keywords": [
 		"multi-root ready"
@@ -43,9 +43,22 @@
 					"description": "Traces the communication between VS Code and the language server."
 				}
 			}
-		}
+		},
+		"commands": [
+			{
+				"command": "helloworld.helloWorld",
+				"title": "Hello World"
+			},
+			{
+				"command": "example.sendPing",
+				"title": "Send Ping"
+			}
+		]
 	},
+
 	"scripts": {
+		"prepack": "npm run copy-lasapp",
+		"copy-lasapp": "rm -rf lasapp && mkdir ./lasapp && cp -r ../src/py ./lasapp/py",
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
@@ -61,5 +74,8 @@
 		"mocha": "^10.3.0",
 		"typescript": "^5.9.2",
 		"typescript-eslint": "^8.39.0"
+	},
+	"dependencies": {
+		"vscode-jsonrpc": "^8.2.1"
 	}
 }

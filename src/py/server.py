@@ -1,4 +1,6 @@
-from jsonrpc_server import run_server, _SESSION
+
+from typing import Dict, Tuple, Any
+from ast_utils.scoped_tree import ScopedTree
 
 import ast
 from ast_utils.scoped_tree import ScopedTree, get_scoped_tree
@@ -14,6 +16,8 @@ import analysis.symbolic as symbolic
 from ppls import *
 import server_interface
 import uuid
+
+_SESSION: Dict[str, Tuple[Any,ScopedTree]] = dict()
 
 def get_syntax_tree(file_content: str, line_offsets: list[int], n_unroll_loops: int, uniquify_calls: bool) -> SyntaxTree:
     syntax_tree = ast.parse(file_content)
@@ -204,29 +208,8 @@ def get_path_conditions(tree_id: str, root: dict, nodes: list[dict], mask: list[
     path_conditions = [server_interface.SymbolicExpression(symbolic.path_condition_to_str(result[node])) for node in nodes]
     return path_conditions
 
-import sys
-from jsonrpc import dispatcher
-import os
-from pathlib import Path
+def ping() -> str:
+    return "pong"
 
-if __name__ == '__main__':
-    # socket_name = sys.argv[1]
-    Path("./.pipe").mkdir(exist_ok=True)
-    socket_name = "./.pipe/python_rpc_socket"
-
-    if os.path.exists(socket_name):
-        os.remove(socket_name)
-
-    print("Started Python Language Server", socket_name)
-
-    dispatcher["build_ast"] = build_ast
-    dispatcher["get_random_variables"] = get_random_variables
-    dispatcher["get_model"] = get_model
-    dispatcher["get_guide"] = get_guide
-    dispatcher["get_data_dependencies"] = get_data_dependencies
-    dispatcher["get_control_dependencies"] = get_control_dependencies
-    dispatcher["estimate_value_range"] = estimate_value_range
-    dispatcher["get_call_graph"] = get_call_graph
-    dispatcher["get_path_conditions"] = get_path_conditions
-
-    run_server(socket_name, dispatcher)
+def clear_session():
+    _SESSION.clear()
