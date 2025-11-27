@@ -20,7 +20,7 @@ model = linear_regression
 with linear_regression:
     idata = pm.sample(3000, cores=1, random_seed=0)
 
-    means = idata.posterior.mean()
+    means = idata["posterior"].mean()
     slope = means["slope"].values
     intercept = means["intercept"].values
     sigma = means["sigma"].values

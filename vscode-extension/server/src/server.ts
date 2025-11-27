@@ -77,10 +77,6 @@ connection.onInitialize((params: InitializeParams) => {
 	const result: InitializeResult = {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
-			// Tell the client that this server supports code completion.
-			completionProvider: {
-				resolveProvider: true
-			},
 			diagnosticProvider: {
 				interFileDependencies: false,
 				workspaceDiagnostics: false
@@ -164,7 +160,7 @@ connection.languages.diagnostics.on(async (params) => {
 	if (document !== undefined) {
 		return {
 			kind: DocumentDiagnosticReportKind.Full,
-			items: await validateTextDocument(document)
+			items: []
 		} satisfies DocumentDiagnosticReport;
 	} else {
 		// We don't know the document. We can either try to read it from disk
@@ -181,8 +177,9 @@ connection.languages.diagnostics.on(async (params) => {
 documents.onDidChangeContent(change => {
 });
 
-documents.onDidSave((e) => {
-	validateTextDocument(e.document);
+documents.onDidSave(async (e) => {
+	const diagnostics = await validateTextDocument(e.document);
+	connection.sendDiagnostics({ uri: e.document.uri, diagnostics: diagnostics });
 });
 
 
@@ -249,7 +246,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<Diagnos
 				end: textDocument.positionAt(violation.end_index),
 			},
 			message: violation.description,
-			source: 'lassapp'
+			source: 'lasapp'
 		};
 		diagnostics.push(diagnostic);
 	});
