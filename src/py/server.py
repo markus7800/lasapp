@@ -72,6 +72,22 @@ def build_ast(file_name: str, ppl: str, n_unroll_loops: int) -> str:
     _SESSION[uuid4] = ppl_obj, scoped_tree
     return uuid4
 
+
+
+def build_ast_for_file_content(file_content: str, ppl: str, n_unroll_loops: int) -> str:
+    print("build_ast_for_file_content")
+    line_offsets = get_line_offsets_for_file_content(file_content)
+    ppl_obj = _PPL_DICT[ppl]
+    uniquify_calls = ppl != "beanmachine"
+    syntax_tree = get_syntax_tree(file_content, line_offsets, n_unroll_loops, uniquify_calls)
+    syntax_tree = ppl_obj.preprocess_syntax_tree(syntax_tree)
+
+    scoped_tree = get_scoped_tree(syntax_tree)
+    uuid4 = str(uuid.uuid4())
+    _SESSION[uuid4] = ppl_obj, scoped_tree
+    return uuid4
+
+
 def get_model(tree_id: str) -> server_interface.Model:
     print("get_model")
     ppl_obj, scoped_tree = _SESSION[tree_id]

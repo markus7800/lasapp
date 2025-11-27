@@ -5,7 +5,7 @@ from .jsonrpc_client import get_jsonrpc_client
 
 
 class ProbabilisticProgram:
-    def __init__(self, file_name: str, n_unroll_loops: int = 0, ppl=None) -> None:
+    def __init__(self, file_name: str, file_content: str | None = None, n_unroll_loops: int = 0, ppl=None) -> None:
         _, ext = os.path.splitext(file_name)
         if ext == '.py':
             socket_name = "./.pipe/python_rpc_socket"
@@ -14,8 +14,10 @@ class ProbabilisticProgram:
         else:
             raise ValueError(f"Unknown file extension: {ext}")
         
-        with open(file_name, encoding="utf-8") as f:
-            file_content = f.read()
+        file_content_provided = file_content is not None
+        if file_content is None:
+            with open(file_name, encoding="utf-8") as f:
+                file_content = f.read()
             
         if ppl is None:
             if 'pyro' in file_content:
@@ -36,7 +38,11 @@ class ProbabilisticProgram:
         self.ppl = ppl
 
 
-        response = self.client.build_ast(file_name=file_name, ppl=ppl, n_unroll_loops=n_unroll_loops)
+        if file_content_provided:
+            response = self.client.build_ast_for_file_content(file_content=file_content, ppl=ppl, n_unroll_loops=n_unroll_loops)
+        else:
+            response = self.client.build_ast(file_name=file_name, ppl=ppl, n_unroll_loops=n_unroll_loops)
+            
         tree_id = response["result"]
         self.tree_id = tree_id
 

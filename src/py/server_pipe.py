@@ -41,6 +41,7 @@ if __name__ == '__main__':
     print("Started Python Language Server", socket_name)
 
     dispatcher["build_ast"] = build_ast
+    dispatcher["build_ast_for_file_content"] = build_ast_for_file_content
     dispatcher["get_random_variables"] = get_random_variables
     dispatcher["get_model"] = get_model
     dispatcher["get_guide"] = get_guide

@@ -16,6 +16,16 @@ def get_line_offsets(file_name: str) -> list[int]:
         line_offsets.append(cumsum)
         return line_offsets
     
+def get_line_offsets_for_file_content(file_content: str) -> list[int]:
+    line_offsets: list[int] = []
+    cumsum = 0
+    for line in file_content.splitlines(keepends=True):
+        line_offsets.append(cumsum)
+        cumsum += len(line)
+    
+    line_offsets.append(cumsum)
+    return line_offsets
+    
 
 def get_line_offsets_for_str(s: str) -> list[int]:
     line_offsets: list[int] = []

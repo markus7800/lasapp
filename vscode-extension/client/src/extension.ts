@@ -8,13 +8,6 @@ import { workspace, ExtensionContext } from 'vscode';
 import { exec, spawn, spawnSync } from 'node:child_process';
 import * as fs from "fs";
 import * as vscode from 'vscode';
-import {
-    createMessageConnection,
-} from 'vscode-jsonrpc';
-import {
-    StreamMessageReader,
-    StreamMessageWriter,
-} from 'vscode-jsonrpc/node';
 
 import {
 	LanguageClient,
@@ -48,12 +41,12 @@ async function ensureVenv(pythonDir: string): Promise<string> {
 		console.log("Found venv at " + venvPath);
 	}
 
-	const requirements = path.join(pythonDir, "requirements.txt");
+	const requirements = path.join(pythonDir, "py-requirements.txt");
 	if (fs.existsSync(requirements)) {
 		const packageList = await run(pythonPath + " -m pip freeze", pythonDir);
 		if (!packageList.includes("ast_scope")){
 			console.log("Installing requirements...");
-			await run(pythonPath + " -m pip install -r requirements.txt", pythonDir);
+			await run(pythonPath + " -m pip install -r py-requirements.txt", pythonDir);
 		} else {
 			console.log("Requirements already installed.");
 		}
@@ -67,27 +60,23 @@ let client: LanguageClient;
 export async function activate(context: ExtensionContext) {
 	console.log("Activate Client.")
 
-	// The server is implemented in node
-	const serverModule = context.asAbsolutePath(
-		path.join('server', 'out', 'server.js')
-	);
 
-	const lasappPyServerFolder = context.asAbsolutePath(path.join('lasapp/py'));
-
-	const lasappPyServerCmd = await vscode.window.withProgress(
+	const lasappPython = await vscode.window.withProgress(
 		{ location: vscode.ProgressLocation.Window, title: "Preparing Lasapp server..." },
 		async () => {
-			return await ensureVenv(lasappPyServerFolder);
+			return await ensureVenv(context.asAbsolutePath(path.join('lasapp', 'src')));
 		}
 	);
 
-	console.log(lasappPyServerCmd)
+	console.log(lasappPython)
 
-	const lasappPyServer = spawn(lasappPyServerCmd, ["server_stdio.py"], {
-		cwd: lasappPyServerFolder,
+	context.extensionPath
+	const lasappPyServer = spawn(lasappPython, ["lasapp/src/py/server_pipe.py"], {
+		cwd: context.asAbsolutePath("."),
         stdio: ["pipe", "pipe", "pipe"]
 	})
 	console.log("Spawned lasappPyServer")
+	// console.log(await run("ls -a", context.asAbsolutePath(".")));
 
     context.subscriptions.push({
         dispose() {
@@ -96,26 +85,14 @@ export async function activate(context: ExtensionContext) {
         }
     });
 
-	 const connection = createMessageConnection(
-        new StreamMessageReader(lasappPyServer.stdout),
-        new StreamMessageWriter(lasappPyServer.stdin)
-    );
+	// const res = await run(`${lasappPython} ${context.asAbsolutePath(path.join("server", "src", "test.py"))} ${context.asAbsolutePath(path.join("test_programs", "linear_regression.py"))}`, context.asAbsolutePath("."));
+	// console.log("here", res)
 
-    connection.listen();
 
-	const sendPing = vscode.commands.registerCommand('example.sendPing', async () => {
-        const result = await connection.sendRequest("ping", {});
-        vscode.window.showInformationMessage(`Python replied: ${JSON.stringify(result)}`);
-    });
-	context.subscriptions.push(sendPing);
+	const serverModule = context.asAbsolutePath(
+		path.join('server', 'out', 'server.js')
+	);
 
-	const disposable = vscode.commands.registerCommand('helloworld.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from HelloWorld!');
-	});
-
-	context.subscriptions.push(disposable);
 
 	// If the extension is launched in debug mode then the debug server options are used
 	// Otherwise the run options are used
@@ -130,7 +107,12 @@ export async function activate(context: ExtensionContext) {
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
-		documentSelector: [{ scheme: 'file', language: 'plaintext' }],
+		documentSelector: [{ scheme: 'file', language: 'python' }],
+		initializationOptions: {
+			analysisPython: lasappPython,
+			analysisFile: context.asAbsolutePath(path.join("server", "src", "test.py")),
+			analysisWd: context.asAbsolutePath(".")
+		},
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
@@ -139,8 +121,8 @@ export async function activate(context: ExtensionContext) {
 
 	// Create the language client and start the client.
 	client = new LanguageClient(
-		'languageServerExample',
-		'Language Server Example',
+		'lasapp',
+		'LASAPP',
 		serverOptions,
 		clientOptions
 	);

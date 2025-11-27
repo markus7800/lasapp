@@ -4,7 +4,7 @@
 	"author": "Markus Boeck",
 	"license": "MIT",
 	"version": "1.0.0",
-	"publisher": "",
+	"publisher": "lasapp",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/lasapp/lasapp"
@@ -17,7 +17,7 @@
 		"vscode": "^1.100.0"
 	},
 	"activationEvents": [
-		"onLanguage:plaintext"
+		"onLanguage:python"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
@@ -58,7 +58,7 @@
 
 	"scripts": {
 		"prepack": "npm run copy-lasapp",
-		"copy-lasapp": "rm -rf lasapp && mkdir ./lasapp && cp -r ../src/py ./lasapp/py",
+		"copy-lasapp": "rm -rf lasapp/src && cp -r ../src ./lasapp/src/",
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",

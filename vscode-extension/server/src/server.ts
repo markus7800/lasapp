@@ -16,12 +16,27 @@ import {
 	TextDocumentSyncKind,
 	InitializeResult,
 	DocumentDiagnosticReportKind,
-	type DocumentDiagnosticReport
+	type DocumentDiagnosticReport,
+	Position
 } from 'vscode-languageserver/node';
+import { exec, spawn } from 'node:child_process';
 
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
+
+
+function run(cmd: string, cwd: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        exec(cmd, { cwd }, (err, stdout, stderr) => {
+            // if (stdout) console.log(stdout);
+            // if (stderr) console.error(stderr);
+            if (err) reject(err);
+            else resolve(stdout);
+        });
+    });
+}
+
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -34,9 +49,16 @@ let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
+let analysisPython = "";
+let analysisFile = "";
+let analysisWd = ""
+
 connection.onInitialize((params: InitializeParams) => {
-	console.log("Server onInitialize")
+	console.log("Server onInitialize", params)
 	const capabilities = params.capabilities;
+	analysisPython = params.initializationOptions?.analysisPython;
+	analysisFile = params.initializationOptions?.analysisFile;
+	analysisWd = params.initializationOptions?.analysisWd;
 
 	// Does the client support the `workspace/configuration` request?
 	// If not, we fall back using global settings.
@@ -157,51 +179,80 @@ connection.languages.diagnostics.on(async (params) => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
-	validateTextDocument(change.document);
 });
+
+documents.onDidSave((e) => {
+	validateTextDocument(e.document);
+});
+
+
+async function runPythonAnalysis(source: string): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+		try {
+			const py = spawn(analysisPython, [analysisFile], {cwd: analysisWd});
+
+			let stdout = "";
+			let stderr = "";
+
+			py.stdout.on("data", (data) => {
+				stdout += data.toString();
+			});
+
+			py.stderr.on("data", (data) => {
+				stderr += data.toString();
+			});
+
+			py.on("close", (code) => {
+				if (code !== 0) {
+					return reject(new Error("Python error: " + stderr));
+				}
+				try {
+					resolve(JSON.parse(stdout));
+				} catch (err) {
+					reject(err);
+				}
+			});
+
+			py.stdin.write(source);
+			py.stdin.end();
+		} catch (error) {
+			reject(error)
+		}
+        
+    });
+}
+
 
 async function validateTextDocument(textDocument: TextDocument): Promise<Diagnostic[]> {
 	// In this simple example we get the settings for every validate run.
 	const settings = await getDocumentSettings(textDocument.uri);
+	console.log("validate", textDocument.uri)
+	const diagnostics: Diagnostic[] = [];
+	// console.log(analysisCmd + " " + textDocument.uri)
+	// const res = await run(analysisPython + " " + analysisFile, analysisWd)
+	// console.log(res) // + " " + textDocument.uri
 
 	// The validator creates diagnostics for all uppercase words length 2 and more
 	const text = textDocument.getText();
-	const pattern = /\b[A-Z]{2,}\b/g;
-	let m: RegExpExecArray | null;
+	const result = await runPythonAnalysis(text);
+	// console.log("result", result, textDocument.lineCount)
+	// console.log("true")
+	// console.log(textDocument.getText({start: textDocument.positionAt(10), end: textDocument.positionAt(25)}))
+	// return diagnostics;
 
-	let problems = 0;
-	const diagnostics: Diagnostic[] = [];
-	while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-		problems++;
+	result.forEach(violation => {
+		console.log(violation)
 		const diagnostic: Diagnostic = {
 			severity: DiagnosticSeverity.Warning,
 			range: {
-				start: textDocument.positionAt(m.index),
-				end: textDocument.positionAt(m.index + m[0].length)
+				start: textDocument.positionAt(violation.start_index),
+				end: textDocument.positionAt(violation.end_index),
 			},
-			message: `${m[0]} is all uppercase.`,
-			source: 'ex'
+			message: violation.description,
+			source: 'lassapp'
 		};
-		if (hasDiagnosticRelatedInformationCapability) {
-			diagnostic.relatedInformation = [
-				{
-					location: {
-						uri: textDocument.uri,
-						range: Object.assign({}, diagnostic.range)
-					},
-					message: 'Spelling matters'
-				},
-				{
-					location: {
-						uri: textDocument.uri,
-						range: Object.assign({}, diagnostic.range)
-					},
-					message: 'Particularly for names'
-				}
-			];
-		}
 		diagnostics.push(diagnostic);
-	}
+	});
 	return diagnostics;
 }
 
@@ -209,42 +260,6 @@ connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
 	connection.console.log('We received a file change event');
 });
-
-// This handler provides the initial list of the completion items.
-connection.onCompletion(
-	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-		// The pass parameter contains the position of the text document in
-		// which code complete got requested. For the example we ignore this
-		// info and always provide the same completion items.
-		return [
-			{
-				label: 'TypeScript',
-				kind: CompletionItemKind.Text,
-				data: 1
-			},
-			{
-				label: 'JavaScript',
-				kind: CompletionItemKind.Text,
-				data: 2
-			}
-		];
-	}
-);
-
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve(
-	(item: CompletionItem): CompletionItem => {
-		if (item.data === 1) {
-			item.detail = 'TypeScript details';
-			item.documentation = 'TypeScript documentation';
-		} else if (item.data === 2) {
-			item.detail = 'JavaScript details';
-			item.documentation = 'JavaScript documentation';
-		}
-		return item;
-	}
-);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

@@ -18,6 +18,13 @@ class ConstraintViolation:
         s += f"    Parameter {self.parameter.name} of {dist_name} distribution has constraint {self.constraint}, but values are estimated to be in {self.estimated_range}.\n"
         return s
     
+    def message(self) -> str:
+        rv_text = self.random_variable.node.source_text
+        s = f"Possible constraint violation in \"{rv_text}\":\n"
+        dist_name = self.distribution.name
+        s += f"    Parameter {self.parameter.name} of {dist_name} distribution has constraint {self.constraint}, but values are estimated to be in {self.estimated_range}.\n"
+        return s
+    
 
 class VerficationFailedConstraint:
     def __init__(self, random_variable, parameter, constraint, distribution):
