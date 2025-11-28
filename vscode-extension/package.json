@@ -17,7 +17,8 @@
 		"vscode": "^1.100.0"
 	},
 	"activationEvents": [
-		"onLanguage:python"
+		"onLanguage:python",
+		"onWebviewPanel:lasappPanel"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
@@ -45,17 +46,8 @@
 			}
 		},
 		"commands": [
-			{
-				"command": "helloworld.helloWorld",
-				"title": "Hello World"
-			},
-			{
-				"command": "example.sendPing",
-				"title": "Send Ping"
-			}
 		]
 	},
-
 	"scripts": {
 		"prepack": "npm run copy-lasapp",
 		"copy-lasapp": "rm -rf lasapp/src && cp -r ../src ./lasapp/src/",
@@ -76,6 +68,7 @@
 		"typescript-eslint": "^8.39.0"
 	},
 	"dependencies": {
+		"vscode": "^1.1.37",
 		"vscode-jsonrpc": "^8.2.1"
 	}
 }

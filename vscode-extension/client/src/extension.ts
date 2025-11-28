@@ -6,6 +6,8 @@
 import * as path from 'path';
 import { workspace, ExtensionContext } from 'vscode';
 import { exec, spawn, spawnSync } from 'node:child_process';
+import { CatCodingPanel, getWebviewOptions } from './panel';
+import { AnalysisSettings } from './analysisSettings';
 import * as fs from "fs";
 import * as vscode from 'vscode';
 
@@ -56,6 +58,18 @@ async function ensureVenv(pythonDir: string): Promise<string> {
 }
 
 let client: LanguageClient;
+let analysisSettings = new AnalysisSettings();
+
+function sendAnalysisSettingsToServer(settings: AnalysisSettings) {
+    if (!client) return;
+    try {
+        const payload = JSON.parse(JSON.stringify(settings)); // ensure plain object (no methods)
+        client.sendNotification('lasapp/analysisSettings', payload);
+    } catch (err) {
+        console.error('Error sending analysisSettings to server:', err);
+    }
+}
+
 
 export async function activate(context: ExtensionContext) {
 	console.log("Activate Client.")
@@ -109,6 +123,7 @@ export async function activate(context: ExtensionContext) {
 		// Register the server for plain text documents
 		documentSelector: [{ scheme: 'file', language: 'python' }],
 		initializationOptions: {
+			analysisSettings: analysisSettings,
 			analysisPython: lasappPython,
 			analysisFile: context.asAbsolutePath(path.join("server", "src", "analyse.py")),
 			analysisWd: context.asAbsolutePath(".")
@@ -129,6 +144,31 @@ export async function activate(context: ExtensionContext) {
 
 	// Start the client. This will also launch the server
 	client.start();
+
+	let onSettingsChanged = (async (newSettings: AnalysisSettings) => {
+		analysisSettings = newSettings;
+		sendAnalysisSettingsToServer(newSettings);
+	});
+
+    context.subscriptions.push(
+        workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
+            if (document.languageId === 'python') {
+                CatCodingPanel.createOrShow(context.extensionUri, analysisSettings, onSettingsChanged);
+            }
+        })
+    );
+
+	if (vscode.window.registerWebviewPanelSerializer) {
+		// Make sure we register a serializer in activation event
+		vscode.window.registerWebviewPanelSerializer(CatCodingPanel.viewType, {
+			async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel, state: unknown) {
+				console.log(`Got state: ${state}`);
+				// Reset the webview options so we use latest uri for `localResourceRoots`.
+				webviewPanel.webview.options = getWebviewOptions(context.extensionUri);
+				CatCodingPanel.revive(webviewPanel, context.extensionUri, analysisSettings, onSettingsChanged);
+			}
+		});
+	}
 }
 
 export function deactivate(): Thenable<void> | undefined {

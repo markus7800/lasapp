@@ -24,7 +24,7 @@ import { exec, spawn } from 'node:child_process';
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
-
+import { AnalysisSettings } from './analysisSettings'; // TODO: find a way to share this class definition between client and server
 
 function run(cmd: string, cwd: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -51,14 +51,16 @@ let hasDiagnosticRelatedInformationCapability = false;
 
 let analysisPython = "";
 let analysisFile = "";
-let analysisWd = ""
+let analysisWd = "";
+let analysisSettings: AnalysisSettings;
 
 connection.onInitialize((params: InitializeParams) => {
-	console.log("Server onInitialize", params)
+	// console.log("Server onInitialize", params)
 	const capabilities = params.capabilities;
 	analysisPython = params.initializationOptions?.analysisPython;
 	analysisFile = params.initializationOptions?.analysisFile;
 	analysisWd = params.initializationOptions?.analysisWd;
+	analysisSettings = params.initializationOptions?.analysisSettings;
 
 	// Does the client support the `workspace/configuration` request?
 	// If not, we fall back using global settings.
@@ -103,6 +105,16 @@ connection.onInitialized(() => {
 			connection.console.log('Workspace folder change event received.');
 		});
 	}
+
+	connection.onNotification('lasapp/analysisSettings', (settings: any) => {
+		try {
+			// Replace existing settings object with incoming settings object
+			analysisSettings = settings as AnalysisSettings;
+			connection.console.log('Received analysisSettings update: ' + JSON.stringify(settings));
+		} catch (err) {
+			connection.console.error('Failed to update analysisSettings: ' + (err as Error).message);
+		}
+	});
 });
 
 // The example settings
@@ -186,7 +198,18 @@ documents.onDidSave(async (e) => {
 async function runPythonAnalysis(source: string): Promise<any[]> {
     return new Promise((resolve, reject) => {
 		try {
-			const py = spawn(analysisPython, [analysisFile, "--constraint", "--guide", "--hmc"], {cwd: analysisWd});
+			let args = [analysisFile];
+			if (analysisSettings.constraint_verification) {
+				args.push("--constraint");
+			}
+			if (analysisSettings.guide_validation) {
+				args.push("--guide");
+			}
+			if (analysisSettings.hmc_assumptions_checker) {
+				args.push("--hmc");
+			}
+			console.log("Running analysis:", args.join(" "), "in", analysisWd)
+			const py = spawn(analysisPython, args, {cwd: analysisWd});
 
 			let stdout = "";
 			let stderr = "";
@@ -229,7 +252,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<Diagnos
 	const result = await runPythonAnalysis(text);
 
 	result.forEach(violation => {
-		console.log(violation)
+		// console.log(violation)
 		const diagnostic: Diagnostic = {
 			severity: DiagnosticSeverity.Warning,
 			range: {
