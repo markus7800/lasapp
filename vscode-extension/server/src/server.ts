@@ -186,7 +186,7 @@ documents.onDidSave(async (e) => {
 async function runPythonAnalysis(source: string): Promise<any[]> {
     return new Promise((resolve, reject) => {
 		try {
-			const py = spawn(analysisPython, [analysisFile], {cwd: analysisWd});
+			const py = spawn(analysisPython, [analysisFile, "--constraint", "--guide", "--hmc"], {cwd: analysisWd});
 
 			let stdout = "";
 			let stderr = "";
@@ -222,20 +222,11 @@ async function runPythonAnalysis(source: string): Promise<any[]> {
 
 async function validateTextDocument(textDocument: TextDocument): Promise<Diagnostic[]> {
 	// In this simple example we get the settings for every validate run.
-	const settings = await getDocumentSettings(textDocument.uri);
 	console.log("validate", textDocument.uri)
 	const diagnostics: Diagnostic[] = [];
-	// console.log(analysisCmd + " " + textDocument.uri)
-	// const res = await run(analysisPython + " " + analysisFile, analysisWd)
-	// console.log(res) // + " " + textDocument.uri
 
-	// The validator creates diagnostics for all uppercase words length 2 and more
 	const text = textDocument.getText();
 	const result = await runPythonAnalysis(text);
-	// console.log("result", result, textDocument.lineCount)
-	// console.log("true")
-	// console.log(textDocument.getText({start: textDocument.positionAt(10), end: textDocument.positionAt(25)}))
-	// return diagnostics;
 
 	result.forEach(violation => {
 		console.log(violation)

@@ -20,6 +20,8 @@ class OverlappingSampleStatements(ACViolationWarning):
         s = f"OverlappingSampleStatements in {self.func} for {self.rv_name}:\n"
         s += f"{self.rv1.node.source_text} in path {self.pc1} and {self.rv2.node.source_text} in path {self.pc2} may be executed at the same time."
         return s
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.rv1.node.first_byte, self.rv1.node.last_byte), (self.rv2.node.first_byte, self.rv2.node.last_byte)]
     
 
 class GlobalAbsoluteContinuityViolation(ACViolationWarning):
@@ -28,7 +30,13 @@ class GlobalAbsoluteContinuityViolation(ACViolationWarning):
         self.Q = Q
         self.info = info
     def __repr__(self) -> str:
-        return f"GlobalAbsoluteContinuityViolation:\n Density of {self.P.name} greater than 0 does not imply density of {self.Q.name} greater than 0 ({self.info})."     
+        return f"GlobalAbsoluteContinuityViolation:\n Density of {self.P.name} greater than 0 does not imply density of {self.Q.name} greater than 0 ({self.info})."
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        if "\n" in self.Q.node.source_text:
+            lb = self.Q.node.first_byte + self.Q.node.source_text.index("\n")
+        else:
+            lb = self.Q.node.last_byte
+        return [(self.Q.node.first_byte, lb)]
 
 class AbsoluteContinuityViolation(ACViolationWarning):
     def __init__(self, P: lasapp.Model, Q: lasapp.Model, rv_name, info) -> None:
@@ -38,6 +46,12 @@ class AbsoluteContinuityViolation(ACViolationWarning):
         self.info = info
     def __repr__(self) -> str:
         return f"AbsoluteContinuityViolation:\nSampling {self.rv_name} in {self.P.name} does not imply sampling in {self.Q.name} ({self.info})."
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        if "\n" in self.Q.node.source_text:
+            lb = self.Q.node.first_byte + self.Q.node.source_text.index("\n")
+        else:
+            lb = self.Q.node.last_byte
+        return [(self.Q.node.first_byte, lb)]
         
 
 class SupportTypeMismatch(ACViolationWarning):
@@ -53,6 +67,8 @@ class SupportTypeMismatch(ACViolationWarning):
         s = f"SupportTypeMismatch for {self.rv_name} at {self.P_pc} ∧ {self.Q_pc}:\n"
         s += f"Support type of {self.P.name} rv {self.P_rv.node.source_text} is not equal to type of {self.Q.name} rv {self.Q_rv.node.source_text} (or could not be inferred)."
         return s
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.P_rv.node.first_byte, self.P_rv.node.last_byte), (self.Q_rv.node.first_byte, self.Q_rv.node.last_byte)]
     
 class SupportIntervalMismatch(ACViolationWarning):
     def __init__(self, P: lasapp.Model, Q: lasapp.Model, rv_name, P_rv, P_pc, P_rv_support, Q_rv, Q_pc, Q_rv_support) -> None:
@@ -69,6 +85,8 @@ class SupportIntervalMismatch(ACViolationWarning):
         s = f"SupportIntervalMismatch for {self.rv_name} at {self.P_pc} ∧ {self.Q_pc}:\n"
         s += f"Support of {self.P.name} rv {self.P_rv.node.source_text} is not subset of support of {self.Q.name} rv {self.Q_rv.node.source_text} ({self.P_rv_support} vs {self.Q_rv_support})"
         return s
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.P_rv.node.first_byte, self.P_rv.node.last_byte), (self.Q_rv.node.first_byte, self.Q_rv.node.last_byte)]
         
 
 class Operation:

@@ -110,7 +110,7 @@ export async function activate(context: ExtensionContext) {
 		documentSelector: [{ scheme: 'file', language: 'python' }],
 		initializationOptions: {
 			analysisPython: lasappPython,
-			analysisFile: context.asAbsolutePath(path.join("server", "src", "test.py")),
+			analysisFile: context.asAbsolutePath(path.join("server", "src", "analyse.py")),
 			analysisWd: context.asAbsolutePath(".")
 		},
 		synchronize: {

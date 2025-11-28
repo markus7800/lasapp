@@ -51,6 +51,10 @@ class ContinuousDistributionViolation(HMCAssumptionWarning):
         dist_name = self.distribution.name
         s += (f"    {dist_name} distribution is discrete, which is not supported by HMC/NUTS.")
         return s
+    
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.random_variable.node.first_byte, self.random_variable.node.last_byte)]
+
 
 class RandomControlDependentWarning(HMCAssumptionWarning):
     def __init__(self, random_variable, random_control_deps):
@@ -63,6 +67,9 @@ class RandomControlDependentWarning(HMCAssumptionWarning):
             s += f"        {rv_dep.node.source_text}\n"
         s += "    Random control dependencies may cause discontinuities in the posterior distribution, which are challenging for HMC/NUTS."
         return s
+    
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.random_variable.node.first_byte, self.random_variable.node.last_byte)]
 
 class MultipleDefinitionsWarning(HMCAssumptionWarning):
     def __init__(self, random_variable_name, definitions):
@@ -72,6 +79,9 @@ class MultipleDefinitionsWarning(HMCAssumptionWarning):
     def __str__(self) -> str:
         return f"MultipleDefinitionsWarning: Multiple definitions ({len(self.definitions)}) for random variable with name {self.random_variable_name}."
 
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(definition.node.first_byte, definition.node.last_byte) for definition in self.definitions]
+    
 class MissingInBranchWarning(HMCAssumptionWarning):
     def __init__(self, random_variable, if_stmt, branch):
         self.random_variable = random_variable
@@ -83,6 +93,9 @@ class MissingInBranchWarning(HMCAssumptionWarning):
         s += f"    If condition {self.if_stmt.control_node.source_text} may be stochastic and random variable is not defined in {self.branch} branch."
         return s
     
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.random_variable.node.first_byte, self.random_variable.node.last_byte)]
+    
 class StochasticForLoopRangeWarning(HMCAssumptionWarning):
     def __init__(self, random_variable, for_stmt):
         self.random_variable = random_variable
@@ -92,6 +105,9 @@ class StochasticForLoopRangeWarning(HMCAssumptionWarning):
         s = f"StochasticForLoopRangeWarning: Random variable \"{self.random_variable.node.source_text}\" appears in for loop with potentially stochastic range \"{self.for_stmt.control_node.source_text}\".\n"
         s += f"    This may lead to an unbounded number of random variables which is not supported by HMC/NUTS."
         return s
+    
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.for_stmt.control_node.first_byte, self.for_stmt.control_node.last_byte)]
 
 
 class DefinitionInWhileLoopWarning(HMCAssumptionWarning):
@@ -103,6 +119,9 @@ class DefinitionInWhileLoopWarning(HMCAssumptionWarning):
         s = f"DefinitionInWhileLoopWarning: Random variable \"{self.random_variable.node.source_text}\" appears in while loop body.\n"
         s += f"    This may lead to an unbounded number of random variables which is not supported by HMC/NUTS."
         return s
+    
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.random_variable.node.first_byte, self.random_variable.node.last_byte)]
 
 class SampleInRecursiveCallWarning(HMCAssumptionWarning):
     def __init__(self, random_variable, function):
@@ -113,6 +132,9 @@ class SampleInRecursiveCallWarning(HMCAssumptionWarning):
         s = f"SampleInRecursiveCallWarning: Random variable \"{self.random_variable.node.source_text}\" appears in potentially recursive call.\n"
         s += f"    This may lead to an unbounded number of random variables which is not supported by HMC/NUTS."
         return s
+    
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.random_variable.node.first_byte, self.random_variable.node.last_byte)]
     
 def check_hmc_assumptions(program: lasapp.ProbabilisticProgram) -> list[HMCAssumptionWarning]:
 

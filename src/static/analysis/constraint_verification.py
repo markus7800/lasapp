@@ -18,12 +18,8 @@ class ConstraintViolation:
         s += f"    Parameter {self.parameter.name} of {dist_name} distribution has constraint {self.constraint}, but values are estimated to be in {self.estimated_range}.\n"
         return s
     
-    def message(self) -> str:
-        rv_text = self.random_variable.node.source_text
-        s = f"Possible constraint violation in \"{rv_text}\":\n"
-        dist_name = self.distribution.name
-        s += f"    Parameter {self.parameter.name} of {dist_name} distribution has constraint {self.constraint}, but values are estimated to be in {self.estimated_range}.\n"
-        return s
+    def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
+        return [(self.parameter.node.first_byte, self.parameter.node.last_byte)]
     
 
 class VerficationFailedConstraint:
