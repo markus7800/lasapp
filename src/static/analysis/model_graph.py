@@ -126,7 +126,7 @@ def plot_model_graph(model_graph, filename="model.gv", view=True, label_method="
                 # graph_attr={'label': plate.control_dep["controlsub_node"]["source_text"]}
                 )
         
-        for m in plate.members:
+        for m in sorted(plate.members):
             if isinstance(m, Plate):
                 subgraph = get_graph(m)
                 graph.subgraph(subgraph)

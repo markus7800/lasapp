@@ -17,6 +17,7 @@ body {
 
 ol,
 ul {
+	list-style-type: none;
 	padding-left: var(--container-padding);
 }
 

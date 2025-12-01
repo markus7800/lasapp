@@ -17,7 +17,6 @@ import {
 	ServerOptions,
 	TransportKind
 } from 'vscode-languageclient/node';
-import { stdout } from 'node:process';
 
 function run(cmd: string, cwd: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -61,14 +60,14 @@ async function ensureVenv(pythonDir: string): Promise<string> {
 let client: LanguageClient;
 let analysisSettings = new AnalysisSettings();
 
-function sendAnalysisSettingsToServer(settings: AnalysisSettings) {
+function updateServer() {
     if (!client) return;
     try {
-        const payload = JSON.parse(JSON.stringify(settings)); // ensure plain object (no methods)
-		console.log("Client: Sending analysisSettings to server:", payload);
-        client.sendNotification('analysisSettings', payload);
+        const payload = JSON.parse(JSON.stringify(analysisSettings)); // ensure plain object (no methods)
+		console.log("Client: Sending analysisSettings and document to server:", payload);
+        client.sendNotification('update', {settings: payload,  documentUri: CatCodingPanel.currentPanel?.getModelDocument()?.uri.toString()});
     } catch (err) {
-        console.error('Error sending analysisSettings to server:', err);
+        console.error('Error updating to server:', err);
     }
 }
 
@@ -181,17 +180,32 @@ export async function activate(context: ExtensionContext) {
 	let onSettingsChanged = (async (newSettings: AnalysisSettings) => {
 		console.log("Client: Settings changed", newSettings);
 		analysisSettings = newSettings;
-		sendAnalysisSettingsToServer(newSettings);
+		updateServer();
 	});
 
+	let showPanel = (document: vscode.TextDocument) => {
+		console.log("showPanel called for document", document.uri.toString());
+		if (document.languageId === 'python') {
+			CatCodingPanel.createOrShow(context.extensionUri, analysisSettings, onSettingsChanged);
+			get_model_graph(context, lasappPython, document).then((result) => {
+				CatCodingPanel.currentPanel?.updateModel(document, result["svg"], result["rv_positions"]);
+			})
+			updateServer();
+		}
+    }
+
     context.subscriptions.push(
-        workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
-            if (document.languageId === 'python') {
-                CatCodingPanel.createOrShow(context.extensionUri, analysisSettings, onSettingsChanged);
-				get_model_graph(context, lasappPython, document).then((result) => {
-					CatCodingPanel.currentPanel?.updateModel(document, result["svg"], result["rv_positions"]);
-				})
-			}
+        workspace.onDidSaveTextDocument(showPanel)
+    );
+	context.subscriptions.push(
+		workspace.onDidOpenTextDocument(showPanel)
+	);
+
+	context.subscriptions.push(
+        vscode.window.onDidChangeActiveTextEditor((editor) => {
+            if (editor && editor.document) {
+                showPanel(editor.document);
+            }
         })
     );
 

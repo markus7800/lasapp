@@ -36,7 +36,7 @@ export class CatCodingPanel {
 
 		// If we already have a panel, show it.
 		if (CatCodingPanel.currentPanel) {
-			CatCodingPanel.currentPanel._panel.reveal(vscode.ViewColumn.Two);
+			CatCodingPanel.currentPanel._panel.reveal(vscode.ViewColumn.Two, true);
 			return;
 		}
 
@@ -145,7 +145,13 @@ export class CatCodingPanel {
 		this._rv_positions = rv_positions;
 		this._update();
 	}
+
+	public getModelDocument(): vscode.TextDocument | undefined {
+		return this._model_document;
+	}
+
 	private _update() {
+		console.log("Panel: updating HTML content");
 		const webview = this._panel.webview;
 
 		this._panel.webview.html = this._getHtmlForWebview(webview);

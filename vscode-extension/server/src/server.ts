@@ -106,13 +106,24 @@ connection.onInitialized(() => {
 		});
 	}
 
-	connection.onNotification('analysisSettings', (settings: any) => {
+	connection.onNotification('update', (params: any) => {
 		try {
 			// Replace existing settings object with incoming settings object
-			analysisSettings = settings as AnalysisSettings;
-			console.log('Server: received analysisSettings update: ' + JSON.stringify(settings));
+			analysisSettings = params.settings as AnalysisSettings;
+			console.log('Server: received update: ' + JSON.stringify(analysisSettings) + " for documentUri: " + params.documentUri);
+			if (params.documentUri) {
+				let document = documents.get(params.documentUri);
+				if (!document) {
+					console.log("Server: No document found for URI", params.documentUri);
+					return;
+				}
+				validateTextDocument(document).then(diagnostics => {
+					connection.sendDiagnostics({ uri: document.uri, diagnostics });
+				});
+			}
+
 		} catch (err) {
-			console.error('Failed to update analysisSettings: ' + (err as Error).message);
+			console.error('Server: Failed to update: ' + (err as Error).message);
 		}
 	});
 });
@@ -194,6 +205,11 @@ documents.onDidSave(async (e) => {
 	const diagnostics = await validateTextDocument(e.document);
 	connection.sendDiagnostics({ uri: e.document.uri, diagnostics: diagnostics });
 });
+
+// documents.onDidOpen(async (e) => {
+// 	const diagnostics = await validateTextDocument(e.document);
+// 	connection.sendDiagnostics({ uri: e.document.uri, diagnostics: diagnostics });
+// });
 
 
 function runPythonAnalysis(source: string): Promise<any[]> {
