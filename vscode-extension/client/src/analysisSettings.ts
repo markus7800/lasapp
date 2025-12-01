@@ -1,5 +1,5 @@
 export class AnalysisSettings {
-    constraint_verification: boolean = true;
-    hmc_assumptions_checker: boolean = true;
-    guide_validation: boolean = true;
+    constraint_verification: boolean = false;
+    hmc_assumptions_checker: boolean = false;
+    guide_validation: boolean = false;
 }

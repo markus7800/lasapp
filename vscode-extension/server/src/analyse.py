@@ -6,7 +6,6 @@ import lasapp
 import analysis.constraint_verification as constraint_verification
 import analysis.guide_validation as guide_validation
 import analysis.hmc_assumptions_checker as hmc_assumptions_checker
-import analysis.model_graph as model_graph
 import json
 
 import re
@@ -25,7 +24,6 @@ if __name__ == '__main__':
     parser.add_argument("--constraint", action="store_true")
     parser.add_argument("--guide", action="store_true")
     parser.add_argument("--hmc", action="store_true")
-    parser.add_argument("--graph", action="store_true")
     args = parser.parse_args()
     
     file_content = sys.stdin.read()

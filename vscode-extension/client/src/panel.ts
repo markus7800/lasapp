@@ -25,6 +25,9 @@ export class CatCodingPanel {
 	private readonly _panel: vscode.WebviewPanel;
 	private readonly _extensionUri: vscode.Uri;
 	private readonly _settings: AnalysisSettings;
+	private _model_document: vscode.TextDocument | undefined = undefined;
+	private _model_graph: string = "";
+	private _rv_positions: Record<string, [number, number]> = {};
 	private _onSettingsChanged: (settings: AnalysisSettings) => Promise<void>;
 
 	private _disposables: vscode.Disposable[] = [];
@@ -97,17 +100,32 @@ export class CatCodingPanel {
                         this._panel.webview.postMessage({ command: 'settings', settings: this._settings });
                         return;
                     }
+					case 'graph_click': {
+						console.log("Graph node clicked:", message.variable);
+						let positions = this._rv_positions[message.variable];
+						if(!positions) {
+							console.log("No position info for variable", message.variable);
+							vscode.window.showTextDocument(this._model_document!);
+							return;
+						} else {
+							vscode.window.showTextDocument(
+								this._model_document!,
+								{
+									selection: new vscode.Range(
+										this._model_document!.positionAt(positions[0]),
+										this._model_document!.positionAt(positions[1])
+									),
+									viewColumn: vscode.ViewColumn.One
+								}
+							);
+						}
+						return;
+					}
                 }
             },
             null,
             this._disposables
         );
-	}
-
-	public doRefactor() {
-		// Send a message to the webview webview.
-		// You can send any JSON serializable data.
-		this._panel.webview.postMessage({ command: 'refactor' });
 	}
 
 	public dispose() {
@@ -124,6 +142,12 @@ export class CatCodingPanel {
 		}
 	}
 
+	public updateModel(model_document: vscode.TextDocument, model_graph: string, rv_positions: Record<string, [number, number]>) {
+		this._model_document = model_document;
+		this._model_graph = model_graph;
+		this._rv_positions = rv_positions;
+		this._update();
+	}
 	private _update() {
 		const webview = this._panel.webview;
 
@@ -170,7 +194,7 @@ export class CatCodingPanel {
 			</head>
 			<body>
 				<section id="settings">
-                    <h2>Analyses to run</h2>
+                    <h2>Analyses</h2>
                     <ul>
                         <li><label><input type="checkbox" id="constraint_verification"/> Verify Constraints</label></li>
                         <li><label><input type="checkbox" id="guide_validation"/> Validate Guide</label></li>
@@ -178,6 +202,10 @@ export class CatCodingPanel {
                     </ul>
                 </section>
 
+				<section id="model-graph">
+					<h2>Model Graph</h2>
+					<div>${this._model_graph}</div>
+				</section>
 
 
                 <script nonce="${nonce}">
@@ -213,6 +241,23 @@ export class CatCodingPanel {
 
                     // Request the current settings initially
                     vscode.postMessage({ command: 'requestSettings' });
+
+					function updateGraphClicks() {
+						let svg = document.querySelector("svg");
+
+						let titles = document.querySelectorAll("svg g.node title");
+						for(let title of titles) {
+							let parent = title.parentElement;
+							if(!parent) {
+								continue;
+							}
+							parent.style.cursor = "pointer";
+							parent.onclick = (evt) => {
+								vscode.postMessage({command: "graph_click", variable: title.textContent})
+							}
+						}
+					}
+					updateGraphClicks();
                 </script>
 			</body>
 			</html>`;

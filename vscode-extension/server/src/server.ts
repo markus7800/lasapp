@@ -195,7 +195,7 @@ documents.onDidSave(async (e) => {
 });
 
 
-async function runPythonAnalysis(source: string): Promise<any[]> {
+function runPythonAnalysis(source: string): Promise<any[]> {
     return new Promise((resolve, reject) => {
 		try {
 			let args = [analysisFile];

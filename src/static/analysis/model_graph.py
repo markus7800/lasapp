@@ -117,7 +117,7 @@ def merge_nodes_by_name(model_graph):
 # label_method in ("name", "source")
 # "name" uses the random variable name provided by the backend
 # "source" uses the source text of the address node
-def plot_model_graph(model_graph, filename="model.gv", view=True, label_method="name"):
+def plot_model_graph(model_graph, filename="model.gv", view=True, label_method="name", toFile=True):
 
     def get_graph(plate, graph=None):
         if graph is None:
@@ -152,5 +152,9 @@ def plot_model_graph(model_graph, filename="model.gv", view=True, label_method="
     for x,y in model_graph.edges:
         dot.edge(x.node.node_id, y.node.node_id)
 
-    dot.render(filename=filename, directory='tmp', view=view)
-    print(f"Saved graph to tmp/{filename}.pdf")
+    if toFile:
+        dot.render(filename=filename, directory='tmp', view=view)
+        print(f"Saved graph to tmp/{filename}.pdf")
+        return None
+    else:  
+        return dot.pipe(format='svg', encoding='utf-8')

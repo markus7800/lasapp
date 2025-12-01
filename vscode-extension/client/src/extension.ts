@@ -17,6 +17,7 @@ import {
 	ServerOptions,
 	TransportKind
 } from 'vscode-languageclient/node';
+import { stdout } from 'node:process';
 
 function run(cmd: string, cwd: string): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -70,6 +71,38 @@ function sendAnalysisSettingsToServer(settings: AnalysisSettings) {
     }
 }
 
+function get_model_graph(context: ExtensionContext, analysisPython: string, document: vscode.TextDocument) :Promise<any> {
+	let analysisWd = context.asAbsolutePath(".");
+	let analysisFile = context.asAbsolutePath(path.join("client", "src", "graph.py"));
+	return new Promise((resolve, reject) => {
+		const py = spawn(analysisPython, [analysisFile], {cwd: analysisWd});
+
+		let stdout = "";
+		let stderr = "";
+
+		py.stdout.on("data", (data) => {
+			stdout += data.toString();
+		});
+
+		py.stderr.on("data", (data) => {
+			stderr += data.toString();
+		});
+
+		py.on("close", (code) => {
+			if (code !== 0) {
+				return reject(new Error("Python error: " + stderr));
+			}
+			try {
+				resolve(JSON.parse(stdout));
+			} catch (err) {
+				reject(err);
+			}
+		});
+
+		py.stdin.write(document.getText());
+		py.stdin.end();
+	})
+}
 
 export async function activate(context: ExtensionContext) {
 	console.log("Activate Client.")
@@ -84,7 +117,6 @@ export async function activate(context: ExtensionContext) {
 
 	console.log(lasappPython)
 
-	context.extensionPath
 	const lasappPyServer = spawn(lasappPython, ["lasapp/src/py/server_pipe.py"], {
 		cwd: context.asAbsolutePath("."),
         stdio: ["pipe", "pipe", "pipe"]
@@ -154,7 +186,11 @@ export async function activate(context: ExtensionContext) {
         workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
             if (document.languageId === 'python') {
                 CatCodingPanel.createOrShow(context.extensionUri, analysisSettings, onSettingsChanged);
-            }
+				get_model_graph(context, lasappPython, document).then((result) => {
+					console.log(result)
+					CatCodingPanel.currentPanel?.updateModel(document, result["svg"], result["rv_positions"]);
+				})
+			}
         })
     );
 
