@@ -106,16 +106,17 @@ connection.onInitialized(() => {
 		});
 	}
 
-	connection.onNotification('lasapp/analysisSettings', (settings: any) => {
+	connection.onNotification('analysisSettings', (settings: any) => {
 		try {
 			// Replace existing settings object with incoming settings object
 			analysisSettings = settings as AnalysisSettings;
-			connection.console.log('Received analysisSettings update: ' + JSON.stringify(settings));
+			console.log('Server: received analysisSettings update: ' + JSON.stringify(settings));
 		} catch (err) {
-			connection.console.error('Failed to update analysisSettings: ' + (err as Error).message);
+			console.error('Failed to update analysisSettings: ' + (err as Error).message);
 		}
 	});
 });
+
 
 // The example settings
 interface ExampleSettings {
@@ -207,6 +208,9 @@ function runPythonAnalysis(source: string): Promise<any[]> {
 			}
 			if (analysisSettings.hmc_assumptions_checker) {
 				args.push("--hmc");
+			}
+			if (analysisSettings.funnel_detection) {
+				args.push("--funnel");
 			}
 			console.log("Running analysis:", args.join(" "), "in", analysisWd)
 			const py = spawn(analysisPython, args, {cwd: analysisWd});

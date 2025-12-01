@@ -65,7 +65,8 @@ function sendAnalysisSettingsToServer(settings: AnalysisSettings) {
     if (!client) return;
     try {
         const payload = JSON.parse(JSON.stringify(settings)); // ensure plain object (no methods)
-        client.sendNotification('lasapp/analysisSettings', payload);
+		console.log("Client: Sending analysisSettings to server:", payload);
+        client.sendNotification('analysisSettings', payload);
     } catch (err) {
         console.error('Error sending analysisSettings to server:', err);
     }
@@ -178,6 +179,7 @@ export async function activate(context: ExtensionContext) {
 	client.start();
 
 	let onSettingsChanged = (async (newSettings: AnalysisSettings) => {
+		console.log("Client: Settings changed", newSettings);
 		analysisSettings = newSettings;
 		sendAnalysisSettingsToServer(newSettings);
 	});
@@ -187,7 +189,6 @@ export async function activate(context: ExtensionContext) {
             if (document.languageId === 'python') {
                 CatCodingPanel.createOrShow(context.extensionUri, analysisSettings, onSettingsChanged);
 				get_model_graph(context, lasappPython, document).then((result) => {
-					console.log(result)
 					CatCodingPanel.currentPanel?.updateModel(document, result["svg"], result["rv_positions"]);
 				})
 			}

@@ -6,6 +6,7 @@ import lasapp
 import analysis.constraint_verification as constraint_verification
 import analysis.guide_validation as guide_validation
 import analysis.hmc_assumptions_checker as hmc_assumptions_checker
+import analysis.funnel_detection as funnel_detection
 import json
 
 import re
@@ -24,6 +25,7 @@ if __name__ == '__main__':
     parser.add_argument("--constraint", action="store_true")
     parser.add_argument("--guide", action="store_true")
     parser.add_argument("--hmc", action="store_true")
+    parser.add_argument("--funnel", action="store_true")
     args = parser.parse_args()
     
     file_content = sys.stdin.read()
@@ -65,6 +67,19 @@ if __name__ == '__main__':
                         "start_index": range[0],
                         "end_index": range[1],
                         "description": strip_ansi(str(violation)),
+                    })
+        except: pass
+        
+    if args.funnel:
+        try:
+            model = program.get_model()
+            warnings = funnel_detection.get_funnel_relationships(program, model)
+            for warning in warnings:
+                for range in warning.get_diagnostic_ranges():
+                    out.append({
+                        "start_index": range[0],
+                        "end_index": range[1],
+                        "description": strip_ansi(str(warning)),
                     })
         except: pass
 

@@ -84,18 +84,15 @@ export class CatCodingPanel {
             async (message) => {
                 switch (message.command) {
                     case 'requestSettings': {
-						console.log("Sending settings:", this._settings);
+						console.log("Panel: settings requested from server");
                         this._panel.webview.postMessage({ command: 'settings', settings: this._settings });
-						console.log("Settings requested");
                         return;
                     }
                     case 'toggleSetting': {
                         const setting: string = message.setting;
                         const value: any = message.value;
-						console.log(`Setting ${message.setting} updated to ${message.value}`);
-						console.log(`Toggling setting ${setting} to ${value}`);
+						console.log(`Panel: Toggling setting ${setting} to ${value}`);
 						this._settings[setting as keyof AnalysisSettings] = value;
-						console.log("Updated settings:", this._settings);
 						await this._onSettingsChanged(this._settings);
                         this._panel.webview.postMessage({ command: 'settings', settings: this._settings });
                         return;
@@ -199,6 +196,7 @@ export class CatCodingPanel {
                         <li><label><input type="checkbox" id="constraint_verification"/> Verify Constraints</label></li>
                         <li><label><input type="checkbox" id="guide_validation"/> Validate Guide</label></li>
                         <li><label><input type="checkbox" id="hmc_assumptions_checker"/> Check HMC assumptions</label></li>
+                        <li><label><input type="checkbox" id="funnel_detection"/> Detect funnels</label></li>
                     </ul>
                 </section>
 
@@ -224,12 +222,13 @@ export class CatCodingPanel {
                                 setCheckbox('constraint_verification', s.constraint_verification);
                                 setCheckbox('guide_validation', s.guide_validation);
                                 setCheckbox('hmc_assumptions_checker', s.hmc_assumptions_checker);
+                                setCheckbox('funnel_detection', s.funnel_detection);
                                 break;
                             }
                         }
                     });
 
-                    ['constraint_verification','guide_validation','hmc_assumptions_checker'].forEach(id => {
+                    ['constraint_verification','guide_validation','hmc_assumptions_checker', 'funnel_detection'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el) {
                             el.addEventListener('change', e => {
