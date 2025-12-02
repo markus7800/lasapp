@@ -5,9 +5,16 @@ import lasapp
 from .utils import is_descendant
 
 class Plate():
-    def __init__(self, control_dep):
+    def __init__(self, control_dep: lasapp.ControlDependency | None):
         self.control_dep = control_dep
         self.members = set() # node_id or Plate
+    def __lt__(self, other):
+        if isinstance(other, Plate):
+            if self.control_dep is not None and other.control_dep is not None:
+                return self.control_dep.node.first_byte < other.control_dep.node.first_byte
+            else:
+                return self.control_dep is not None
+        raise ValueError
 
 class ModelGraph():
     def __init__(self, random_variables, plates, edges):
@@ -126,7 +133,11 @@ def plot_model_graph(model_graph, filename="model.gv", view=True, label_method="
                 # graph_attr={'label': plate.control_dep["controlsub_node"]["source_text"]}
                 )
         
-        for m in sorted(plate.members):
+        ordered_nodes = (
+            sorted([m for m in plate.members if isinstance(m, Plate)]) +
+            sorted([m for m in plate.members if not isinstance(m, Plate)])
+        )
+        for m in ordered_nodes:
             if isinstance(m, Plate):
                 subgraph = get_graph(m)
                 graph.subgraph(subgraph)

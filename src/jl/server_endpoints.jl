@@ -45,10 +45,14 @@ module ServerEndpoints
 
     const PPLs = Dict("turing" => Turing(), "gen" => Gen())
 
+    function get_syntax_tree_for_filecontent(filecontent::String)::SyntaxTree
+        filecontent = replace(filecontent, ";\n" => " \n", ";\r\n" => " \r\n") # HACK: fixes multiple toplevel
+        return get_syntax_tree_for_str(filecontent)
+    end
+
     function get_syntax_tree(file_name::String)::SyntaxTree
         filecontent = get_file_content_as_string(file_name)
-        filecontent = replace(filecontent, ";\n" => "\n", ";\r\n" => "\r\n") # HACK: fixes multiple toplevel
-        return get_syntax_tree_for_str(filecontent)
+        return get_syntax_tree_for_filecontent(filecontent)
     end
 
     function build_ast(connection, file::ServerInterface.File)
@@ -71,6 +75,27 @@ module ServerEndpoints
         _SESSION[uuid] = (ppl, syntaxtree, cfg_progr_repr)
         return uuid
     end
+
+    function build_ast_for_file_content(connection, file::ServerInterface.FileContent)
+        ppl = PPLs[file.ppl]
+        syntaxtree = get_syntax_tree_for_filecontent(file.file_content)
+        # println("Unmodified syntaxtree:")
+        # println(syntaxtree.root_node)
+        preprocess_syntaxtree!(ppl, syntaxtree)
+        # println("Preprocessed syntaxtree:")
+        # println(syntaxtree.root_node)
+        if file.n_unroll_loops > 0
+            unroll_loops!(syntaxtree, file.n_unroll_loops)
+        end
+
+        scoped_tree = get_scoped_tree(syntaxtree)
+        cfg_progr_repr = get_cfg_representation(scoped_tree)
+        
+        uuid = string(UUIDs.uuid4())
+        _SESSION[uuid] = (ppl, syntaxtree, cfg_progr_repr)
+        return uuid
+    end
+    
 
     function get_model(connection, params::ServerInterface.TreeID)
         ppl, syntaxtree, cfg_progr_repr = _SESSION[params.tree_id]
@@ -203,6 +228,7 @@ module ServerEndpoints
         msg_dispatcher = JSONRPC.MsgDispatcher()
 
         msg_dispatcher[ServerInterface.build_ast_rt] = build_ast
+        msg_dispatcher[ServerInterface.build_ast_for_file_content_rt] = build_ast_for_file_content
         msg_dispatcher[ServerInterface.get_model_rt] = get_model
         msg_dispatcher[ServerInterface.get_guide_rt] = get_guide
         msg_dispatcher[ServerInterface.get_random_variables_rt] = get_random_variables

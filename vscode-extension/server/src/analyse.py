@@ -30,7 +30,7 @@ if __name__ == '__main__':
     
     file_content = sys.stdin.read()
     
-    program = lasapp.ProbabilisticProgram("filename.py", file_content=file_content, n_unroll_loops=0)
+    program = lasapp.ProbabilisticProgram("", file_content=file_content, n_unroll_loops=0)
     
     out = []
     

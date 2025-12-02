@@ -18,6 +18,7 @@
 	},
 	"activationEvents": [
 		"onLanguage:python",
+		"onLanguage:julia",
 		"onWebviewPanel:lasappPanel"
 	],
 	"main": "./client/out/extension",

@@ -272,7 +272,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<Diagnos
 	const result = await runPythonAnalysis(text);
 
 	result.forEach(violation => {
-		// console.log(violation)
+		console.log(violation)
 		const diagnostic: Diagnostic = {
 			severity: DiagnosticSeverity.Warning,
 			range: {

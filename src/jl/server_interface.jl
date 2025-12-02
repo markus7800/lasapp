@@ -66,6 +66,12 @@ module ServerInterface
         n_unroll_loops::Int # 0 if no unrolling
     end
 
+    JSONRPC.@dict_readable struct FileContent <: JSONRPC.Outbound
+        file_content::String
+        ppl::String
+        n_unroll_loops::Int # 0 if no unrolling
+    end
+
     JSONRPC.@dict_readable struct Interval <: JSONRPC.Outbound
         low::String # to allow inf
         high::String
@@ -78,6 +84,8 @@ module ServerInterface
     # endpoints
 
     const build_ast_rt = JSONRPC.RequestType("build_ast", File, String)
+
+    const build_ast_for_file_content_rt = JSONRPC.RequestType("build_ast_for_file_content", FileContent, String)
 
     const get_model_rt = JSONRPC.RequestType("get_model", TreeID, Model)
     

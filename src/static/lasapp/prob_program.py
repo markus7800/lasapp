@@ -5,33 +5,29 @@ from .jsonrpc_client import get_jsonrpc_client
 
 
 class ProbabilisticProgram:
-    def __init__(self, file_name: str, file_content: str | None = None, n_unroll_loops: int = 0, ppl=None) -> None:
-        _, ext = os.path.splitext(file_name)
-        if ext == '.py':
-            socket_name = "./.pipe/python_rpc_socket"
-        elif ext == '.jl':
-            socket_name = "./.pipe/julia_rpc_socket"
-        else:
-            raise ValueError(f"Unknown file extension: {ext}")
-        
+    def __init__(self, file_name: str, file_content: str | None = None, n_unroll_loops: int = 0) -> None:
         file_content_provided = file_content is not None
         if file_content is None:
             with open(file_name, encoding="utf-8") as f:
                 file_content = f.read()
             
-        if ppl is None:
-            if 'pyro' in file_content:
-                ppl = 'pyro'
-            elif 'pymc' in file_content:
-                ppl = 'pymc'
-            elif 'Turing' in file_content:
-                ppl = 'turing'
-            elif 'beanmachine' in file_content:
-                ppl = 'beanmachine'
-            elif 'Gen' in file_content:
-                ppl = 'gen'
-            else:
-                raise ValueError("No probabilistic framework found.")
+        if 'pyro' in file_content:
+            ppl = 'pyro'
+            socket_name = "./.pipe/python_rpc_socket"
+        elif 'pymc' in file_content:
+            ppl = 'pymc'
+            socket_name = "./.pipe/python_rpc_socket"
+        elif 'Turing' in file_content:
+            ppl = 'turing'
+            socket_name = "./.pipe/julia_rpc_socket"
+        elif 'beanmachine' in file_content:
+            ppl = 'beanmachine'
+            socket_name = "./.pipe/python_rpc_socket"
+        elif 'Gen' in file_content:
+            ppl = 'gen'
+            socket_name = "./.pipe/julia_rpc_socket"
+        else:
+            raise ValueError("No probabilistic framework found.")
 
         self.client = get_jsonrpc_client(socket_name)
         self.file_name = file_name

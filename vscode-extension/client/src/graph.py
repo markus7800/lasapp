@@ -10,8 +10,7 @@ import json
 if __name__ == '__main__':
     
     file_content = sys.stdin.read()
-    
-    program = lasapp.ProbabilisticProgram("filename.py", file_content=file_content, n_unroll_loops=0)
+    program = lasapp.ProbabilisticProgram("", file_content=file_content, n_unroll_loops=0)
     graph = model_graph.get_model_graph(program)
     
     svg = model_graph.plot_model_graph(graph, toFile=False)

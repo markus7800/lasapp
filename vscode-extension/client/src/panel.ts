@@ -44,7 +44,7 @@ export class CatCodingPanel {
 		const panel = vscode.window.createWebviewPanel(
 			CatCodingPanel.viewType,
 			'LASAPP',
-			vscode.ViewColumn.Two,
+			{viewColumn: vscode.ViewColumn.Two, preserveFocus: true},
 			getWebviewOptions(extensionUri),
 		);
 

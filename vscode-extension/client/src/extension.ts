@@ -57,6 +57,19 @@ async function ensureVenv(pythonDir: string): Promise<string> {
     return pythonPath
 }
 
+async function ensureJulia(juliaDir: string): Promise<string> {
+    const manifestPath = path.join(juliaDir, "Manifest.toml");
+
+    if (!fs.existsSync(manifestPath)) {
+        console.log("Creating Julia venv...");
+        await run("julia --project=. -e \"import Pkg; Pkg.instantiate(); Pkg.precompile()\"", juliaDir);
+    } else {
+		console.log("Found venv at " + manifestPath);
+	}
+
+    return "--project=" + juliaDir
+}
+
 let client: LanguageClient;
 let analysisSettings = new AnalysisSettings();
 
@@ -109,25 +122,46 @@ export async function activate(context: ExtensionContext) {
 
 
 	const lasappPython = await vscode.window.withProgress(
-		{ location: vscode.ProgressLocation.Window, title: "Preparing Lasapp server..." },
+		{ location: vscode.ProgressLocation.Window, title: "Preparing Python Lasapp server..." },
 		async () => {
 			return await ensureVenv(context.asAbsolutePath(path.join('lasapp', 'src')));
 		}
 	);
-
 	console.log(lasappPython)
+
+	const lasappJuliaProject = await vscode.window.withProgress(
+		{ location: vscode.ProgressLocation.Window, title: "Preparing Julia Lasapp server..." },
+		async () => {
+			return await ensureJulia(context.asAbsolutePath(path.join('lasapp', 'src', 'jl')));
+		}
+	);
+	console.log(lasappJuliaProject)
+
+	
 
 	const lasappPyServer = spawn(lasappPython, ["lasapp/src/py/server_pipe.py"], {
 		cwd: context.asAbsolutePath("."),
         stdio: ["pipe", "pipe", "pipe"]
 	})
 	console.log("Spawned lasappPyServer")
-	// console.log(await run("ls -a", context.asAbsolutePath(".")));
-
     context.subscriptions.push({
         dispose() {
 			console.log("Kill lasappPyServer")
             lasappPyServer.kill();
+        }
+    });
+
+
+	const lasappJuliaServer = spawn("julia", [lasappJuliaProject, "lasapp/src/jl/server.jl"], {
+		cwd: context.asAbsolutePath("."),
+        stdio: ["pipe", "pipe", "pipe"]
+	})
+	console.log("Spawned lasappJuliaServer")
+	console.log(lasappJuliaServer)
+    context.subscriptions.push({
+        dispose() {
+			console.log("Kill lasappJuliaServer")
+            lasappJuliaServer.kill();
         }
     });
 
@@ -153,7 +187,7 @@ export async function activate(context: ExtensionContext) {
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
-		documentSelector: [{ scheme: 'file', language: 'python' }],
+		documentSelector: [{ scheme: 'file', language: 'python' }, { scheme: 'file', language: 'julia' }],
 		initializationOptions: {
 			analysisSettings: analysisSettings,
 			analysisPython: lasappPython,
@@ -185,7 +219,7 @@ export async function activate(context: ExtensionContext) {
 
 	let showPanel = (document: vscode.TextDocument) => {
 		console.log("showPanel called for document", document.uri.toString());
-		if (document.languageId === 'python') {
+		if (document.languageId === 'python' || document.languageId === 'julia') {
 			CatCodingPanel.createOrShow(context.extensionUri, analysisSettings, onSettingsChanged);
 			get_model_graph(context, lasappPython, document).then((result) => {
 				CatCodingPanel.currentPanel?.updateModel(document, result["svg"], result["rv_positions"]);
