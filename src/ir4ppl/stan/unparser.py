@@ -1,5 +1,12 @@
-from .syntaxnode import hide_loc_data
 
+def hide_loc_data(sexpr):
+    if isinstance(sexpr, list) and len(sexpr) > 0 and sexpr[0] in ("loc", "xloc", "id_loc"):
+        return [sexpr[0], "..."]
+    if isinstance(sexpr, list):
+        return [hide_loc_data(child) for child in sexpr]
+    else:
+        return sexpr
+    
 block_names = {
     'functionblock': 'functions',
     'datablock': 'data',

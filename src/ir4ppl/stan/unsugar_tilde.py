@@ -1,4 +1,3 @@
-from .syntaxnode import hide_loc_data
 from pprint import pprint
 from copy import deepcopy
 

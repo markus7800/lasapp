@@ -3,6 +3,13 @@ from analysis.interval_arithmetic import Interval
 from analysis.symbolics import SymbolicExpression
 from typing import Set, Dict, Optional
 from graphviz import Source
+from dataclasses import dataclass
+
+@dataclass
+class SourceLocation:
+    source_text: str
+    first_byte: int
+    last_byte: int
 
 class Variable:
     def is_indexed_variable(self) -> bool:
@@ -32,6 +39,8 @@ class Expression:
     def estimate_value_range(self, variable_mask: Dict[Variable,Interval]) -> Interval:
         raise NotImplementedError
     def symbolic(self, variable_mask: Dict[Variable,SymbolicExpression]) -> SymbolicExpression:
+        raise NotImplementedError
+    def get_source_location(self) -> SourceLocation:
         raise NotImplementedError
 
 class AssignTarget:
@@ -92,6 +101,8 @@ class AbstractAssignNode(CFGNode):
     def __repr__(self) -> str:
         s = type(self).__name__
         return f"{s}({self.get_target()} = {self.get_value_expr()}, {self.id})"
+    def get_source_location(self) -> SourceLocation:
+        raise NotImplementedError
         
 
 class AssignNode(AbstractAssignNode):
@@ -133,6 +144,10 @@ class BranchNode(CFGNode):
     def __repr__(self) -> str:
         s = type(self).__name__
         return f"{s}({self.get_test_expr()}, {self.id})"
+    def get_source_location(self) -> SourceLocation:
+        return self.test_expression.get_source_location()
+    def get_kind(self) -> str:
+        raise NotImplementedError # if, for, while etc
         
 
 class JoinNode(CFGNode): pass
@@ -146,6 +161,8 @@ class ReturnNode(CFGNode):
     def __repr__(self) -> str:
         s = type(self).__name__
         return f"{s}({self.get_return_expr()}, {self.id})"
+    def get_source_location(self) -> SourceLocation:
+        return self.return_expression.get_source_location()
 
 class BreakNode(CFGNode): pass
 
@@ -168,6 +185,8 @@ class ExprNode(CFGNode):
     def __repr__(self) -> str:
         s = type(self).__name__
         return f"{s}({self.get_expr()}, {self.id})"
+    def get_source_location(self) -> SourceLocation:
+        return self.expression.get_source_location()
 
 class FactorNode(ExprNode):
     def __init__(self, id: str, factor_expression: Expression) -> None:

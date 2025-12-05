@@ -1,4 +1,4 @@
-from .syntaxnode import StanSyntaxNode, hide_loc_data
+from .syntaxnode import StanSyntaxNode
 from typing import Any, Callable, List, Optional
 
 class NodeVisitor:

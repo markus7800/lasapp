@@ -3,6 +3,7 @@ import sexpdata
 from typing import Optional, Dict, Tuple, List, Any
 from utils import *
 from ir4ppl.base_cfg import AbstractSyntaxNode
+from .unparser import unparse
 
 def sym_to_str(sexpr):
     if isinstance(sexpr, sexpdata.Symbol):
@@ -25,6 +26,7 @@ class StanSyntaxNode(AbstractSyntaxNode):
 
     def set_loc(self, loc_data, line_offsets: list[int], file_content: FileContent):
         start, end = get_first_last_byte(loc_data, line_offsets) # type:ignore
+        # print("set_loc", unparse(self.sexpr), start, end, file_content[start:end])
         self.position: int = start
         self.end_position: int = end
         self.span: int = self.end_position - self.position
@@ -179,13 +181,6 @@ def preproc_operatorassign(sexpr):
     else:
         return sexpr
     
-def hide_loc_data(sexpr):
-    if isinstance(sexpr, list) and len(sexpr) > 0 and sexpr[0] in ("loc", "xloc", "id_loc"):
-        return [sexpr[0], "..."]
-    if isinstance(sexpr, list):
-        return [hide_loc_data(child) for child in sexpr]
-    else:
-        return sexpr
     
     
 def make_stan_syntaxtree(sexpr, line_offsets: List[int], file_content: FileContent):

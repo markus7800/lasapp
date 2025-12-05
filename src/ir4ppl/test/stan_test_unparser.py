@@ -1,6 +1,6 @@
 # %%
 import sys
-sys.path.append(".")
+sys.path.append("src/ir4ppl")
 import subprocess
 import sexpdata
 from stan.syntaxnode import *
@@ -14,7 +14,6 @@ from stan.unparser import unparse
 stanc = "/Users/markus/Documents/stanc3/_build/default/src/stanc/stanc.exe"
 folder = "/Users/markus/Documents/stan-example-models/"
 
-can_be_analyzed_count = 0
 for root, dir, files in os.walk(folder):
     for file in files:
         if file.endswith(".stan"):

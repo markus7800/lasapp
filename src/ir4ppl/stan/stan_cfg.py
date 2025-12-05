@@ -6,7 +6,7 @@ from .node_finder import NodeVisitor, NodeFinder
 from .syntaxnode import *
 from ir4ppl.ir import PPL_IR
 from typing import Any, List
-from .unparser import unparse
+from .unparser import unparse, hide_loc_data
 from analysis.interval_arithmetic import *
 from typing import Callable
 from functools import reduce
@@ -32,25 +32,6 @@ class StanVariable(Variable):
         return False
     def __repr__(self) -> str:
         return f"StanVariable({self.name})"
-
-
-# import math
-# def peval_ints(node: ast.AST):
-#     if isinstance(node, ast.Constant) and isinstance(node.value, int):
-#         return node.value
-#     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
-#         return peval_ints(node.left) + peval_ints(node.right)
-#     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Sub):
-#         return peval_ints(node.left) - peval_ints(node.right)
-#     return math.nan
-
-# def get_static_index_of_ref_identifier(ref_node: ast.AST):
-#     match ref_node:
-#         case ast.Subscript(slice=ast.Tuple(elts=_elts)):
-#             return [peval_ints(el) for el in _elts]
-#         case ast.Subscript(slice=_slice):
-#             return [peval_ints(_slice)]
-#     return math.nan
 
 def match_lval_and_collect_indices(sexpr, indices: list):
     match sexpr:
@@ -223,6 +204,11 @@ class StanExpression(Expression):
             return False
     def __hash__(self) -> int:
         return hash(self.syntaxnodes[0])
+    
+    def get_source_location(self) -> SourceLocation:
+        first_byte = min(syntaxnode.position for syntaxnode in self.syntaxnodes)
+        last_byte = max(syntaxnode.end_position for syntaxnode in self.syntaxnodes)
+        return SourceLocation(self.syntaxnodes[0].source[first_byte:last_byte], first_byte, last_byte)
 
     def get_free_variables(self) -> List[Variable]:
         def is_variable(syntaxnode: StanSyntaxNode) -> bool:
@@ -404,7 +390,7 @@ class StanSampleNode(SampleNode):
         # this class is only usede for the parameter block if we unsugar tilde
         if isinstance(self.get_address_expr(), EmptyStanExpression):
             match self.syntaxnode.sexpr:
-                case ['VarDecl', ['decl_type', type], ['transformation', trafo], *_]:
+                case ['stmt', ['VarDecl', ['decl_type', type], ['transformation', trafo], *_], *_]:
                     match trafo:
                         case 'Identity' | ['OffsetMultiplier' | 'Multiplier' | 'Offset', *_]:
                             return Distribution("ImproperUniform", {})
@@ -419,15 +405,20 @@ class StanSampleNode(SampleNode):
             raise Exception(f"Unkown parameter sexpr: {hide_loc_data(self.syntaxnode.sexpr)}")
         else:
             raise NotImplementedError
+        
+    def get_source_location(self) -> SourceLocation:
+        return SourceLocation(self.syntaxnode.sourcetext(), self.syntaxnode.position, self.syntaxnode.end_position)
     
 class StanFactorNode(FactorNode):
     def __init__(self, id: str, factor_expression: Expression, syntaxnode: StanSyntaxNode, sexpr_to_node: Dict[int,StanSyntaxNode]) -> None:
         super().__init__(id, factor_expression)
         self.syntaxnode = syntaxnode
         self.sexpr_to_node = sexpr_to_node
+    def get_source_location(self) -> SourceLocation:
+        return SourceLocation(self.syntaxnode.sourcetext(), self.syntaxnode.position, self.syntaxnode.position)
     def get_distribution(self) -> Distribution:
         match self.syntaxnode.sexpr:
-            case ['TargetPE', ['expr', ['CondDistApp', [], [['name', name], _], [_, *args]], _]]:
+            case ['stmt', ['TargetPE', ['expr', ['CondDistApp', [], [['name', name], _], [_, *args]], _]], *_]:
                 distname = ""
                 distparams = []
                 match name[:-5]: # suffixes _lpdf, _lpmf
@@ -664,7 +655,8 @@ class StanCFGBuilder(AbstractCFGBuilder):
                     break
                 parent_node = parent_node.parent
             if is_parameter:
-                cfgnode = StanSampleNode(node_id, StanAssignTarget(node[3],self.sexpr_to_node), EmptyStanExpression(), node, self.sexpr_to_node)
+                assert node.parent is not None and node.parent.head == "stmt"
+                cfgnode = StanSampleNode(node_id, StanAssignTarget(node[3],self.sexpr_to_node), EmptyStanExpression(), node.parent, self.sexpr_to_node)
             else:
                 range = None
                 match node.sexpr:
@@ -712,25 +704,27 @@ class StanCFGBuilder(AbstractCFGBuilder):
             add_edge(startnode, cfgnode)
             add_edge(cfgnode, endnode)
         elif node.head == "Tilde":
+            assert node.parent is not None and node.parent.head == "stmt"
             assert node[0].head == "arg"
             assert node[1].head == "distribution"
             assert node[2].head == "args"
             try:
                 target = StanAssignTarget(node[0],self.sexpr_to_node)
-                cfgnode = StanSampleNode(node_id, target, StanExpression([node[1],node[2]], self.sexpr_to_node), node, self.sexpr_to_node)
+                cfgnode = StanSampleNode(node_id, target, StanExpression([node[1],node[2]], self.sexpr_to_node), node.parent, self.sexpr_to_node)
             except Exception as e:
                 print("Warning:", e)
                 # raise e
                 # TODO: verify that we have observe statement
                 # e.g. 1 ~ ..., func(...) ~ (should only depend on data variables)
-                cfgnode = StanFactorNode(node_id, StanExpression([node[0]], self.sexpr_to_node), node, self.sexpr_to_node)
+                cfgnode = StanFactorNode(node_id, StanExpression([node[0]], self.sexpr_to_node), node.parent, self.sexpr_to_node)
 
             nodes.add(cfgnode)
             add_edge(startnode, cfgnode)
             add_edge(cfgnode, endnode)
         elif node.head == "TargetPE" or node.head == "Reject":
             # target += ...
-            cfgnode = StanFactorNode(node_id, StanExpression([node[0]], self.sexpr_to_node), node, self.sexpr_to_node)
+            assert node.parent is not None and node.parent.head == "stmt"
+            cfgnode = StanFactorNode(node_id, StanExpression([node[0]], self.sexpr_to_node), node.parent, self.sexpr_to_node)
             nodes.add(cfgnode)
             add_edge(startnode, cfgnode)
             add_edge(cfgnode, endnode)
@@ -868,11 +862,11 @@ from .unsugar_tilde import preproc_unsugar_tilde
 # TODO:
 # check for target
 # add improper priors
-def get_IR_for_stan(filename: str, unsugar_tilde: bool = True):
+def get_IR_for_stan(filename: str, unsugar_tilde: bool = True, stanc="stanc"):
     line_offsets = get_line_offsets(filename)
     file_content = get_file_content(filename)
 
-    res = subprocess.run(["./stanc", "--debug-ast", filename], capture_output=True)
+    res = subprocess.run([stanc, "--debug-ast", filename], capture_output=True)
     stan_ast = res.stdout.decode("utf-8")
     if stan_ast == "":
         err = res.stderr.decode("utf-8")
