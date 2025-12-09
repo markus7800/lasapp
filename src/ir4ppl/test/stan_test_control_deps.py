@@ -19,8 +19,8 @@ for root, dir, files in os.walk(folder):
             print(bcolors.HEADER, filename, bcolors.ENDC, sep="")
 
             ir = get_IR_for_stan(filename, stanc=stanc)
-            warngings = check_for_random_control_flow(ir)
-            for warnging in warngings:
-                print(warnging)
+            warnings = check_for_random_control_flow(ir)
+            for warning in warnings:
+                print(warning.get_diagnostic_ranges(),  warning)
             print()
             

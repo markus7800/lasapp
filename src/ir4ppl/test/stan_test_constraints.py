@@ -27,7 +27,7 @@ for root, dir, files in os.walk(folder):
                 can_be_analyzed_count += 1
                 print(bcolors.HEADER, filename, bcolors.ENDC, bcolors.OKGREEN, " OK", bcolors.ENDC, sep="")
                 for violation in violations:
-                    print(violation)
+                    print(violation.get_diagnostic_ranges(), violation)
             else:                
                 print(bcolors.HEADER, filename, bcolors.ENDC, bcolors.FAIL, " NO", bcolors.ENDC, sep="")
                 pass

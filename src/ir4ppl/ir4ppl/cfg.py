@@ -284,6 +284,9 @@ class CFG:
 
     def contains(self, node: CFGNode):
         return self.startnode == node or self.endnode == node or node in self.nodes
+    
+    def get_source_location(self) -> SourceLocation:
+        raise NotImplementedError
 
 def verify_cfg(cfg: CFG):
     if not isinstance(cfg.startnode, (StartNode, FuncStartNode)):
