@@ -38,7 +38,7 @@ async function ensureVenv(pythonDir: string): Promise<string> {
 
     if (!fs.existsSync(venvPath)) {
         console.log("Creating Python venv...");
-        await run("python3 -m venv venv", pythonDir);
+        await run("python3.13 -m venv venv", pythonDir);
     } else {
 		console.log("Found venv at " + venvPath);
 	}
@@ -86,9 +86,17 @@ function updateServer() {
 
 function get_model_graph(context: ExtensionContext, analysisPython: string, document: vscode.TextDocument) :Promise<any> {
 	let analysisWd = context.asAbsolutePath(".");
-	let analysisFile = context.asAbsolutePath(path.join("client", "src", "graph.py"));
+	let args = []
+	if (document.languageId == "stan") {
+		args.push(context.asAbsolutePath(path.join("client", "src", "graph_ir4ppl.py")));
+		// TODO: replace with setting
+		let stanc = "/Users/markus/Documents/stanc3/_build/default/src/stanc/stanc.exe";
+		args.push(stanc)
+	} else {
+		args.push(context.asAbsolutePath(path.join("client", "src", "graph.py")));
+	}
 	return new Promise((resolve, reject) => {
-		const py = spawn(analysisPython, [analysisFile], {cwd: analysisWd});
+		const py = spawn(analysisPython, args, {cwd: analysisWd});
 
 		let stdout = "";
 		let stderr = "";
@@ -129,6 +137,10 @@ export async function activate(context: ExtensionContext) {
 	);
 	console.log(lasappPython)
 
+	// clean up from previous runs
+	await run("rm .pipe/tmp/*.hpp", context.asAbsolutePath("."));
+	await run("rm .pipe/tmp/*.stan", context.asAbsolutePath("."));
+
 	const lasappJuliaProject = await vscode.window.withProgress(
 		{ location: vscode.ProgressLocation.Window, title: "Preparing Julia Lasapp server..." },
 		async () => {
@@ -157,7 +169,6 @@ export async function activate(context: ExtensionContext) {
         stdio: ["pipe", "pipe", "pipe"]
 	})
 	console.log("Spawned lasappJuliaServer")
-	console.log(lasappJuliaServer)
     context.subscriptions.push({
         dispose() {
 			console.log("Kill lasappJuliaServer")
@@ -187,11 +198,11 @@ export async function activate(context: ExtensionContext) {
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
-		documentSelector: [{ scheme: 'file', language: 'python' }, { scheme: 'file', language: 'julia' }],
+		documentSelector: [{ scheme: 'file', language: 'python' }, { scheme: 'file', language: 'julia' }, { scheme: 'file', language: 'stan' }],
 		initializationOptions: {
 			analysisSettings: analysisSettings,
 			analysisPython: lasappPython,
-			analysisFile: context.asAbsolutePath(path.join("server", "src", "analyse.py")),
+			analysisDirectory: context.asAbsolutePath(path.join("server", "src")),
 			analysisWd: context.asAbsolutePath(".")
 		},
 		synchronize: {
@@ -218,8 +229,8 @@ export async function activate(context: ExtensionContext) {
 	});
 
 	let showPanel = (document: vscode.TextDocument) => {
-		console.log("showPanel called for document", document.uri.toString());
-		if (document.languageId === 'python' || document.languageId === 'julia') {
+		console.log("showPanel called for document", document.uri.toString(), document.languageId);
+		if (document.languageId === 'python' || document.languageId === 'julia' || document.languageId === 'stan') {
 			CatCodingPanel.createOrShow(context.extensionUri, analysisSettings, onSettingsChanged);
 			get_model_graph(context, lasappPython, document).then((result) => {
 				CatCodingPanel.currentPanel?.updateModel(document, result["svg"], result["rv_positions"]);

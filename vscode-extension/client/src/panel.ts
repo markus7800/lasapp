@@ -98,9 +98,9 @@ export class CatCodingPanel {
                         return;
                     }
 					case 'graph_click': {
-						console.log("Graph node clicked:", message.variable);
-						let positions = this._rv_positions[message.variable];
-						if(!positions) {
+						let position = this._rv_positions[message.variable];
+						console.log("Graph node clicked:", message.variable, position);
+						if(!position) {
 							console.log("No position info for variable", message.variable);
 							vscode.window.showTextDocument(this._model_document!);
 							return;
@@ -109,8 +109,8 @@ export class CatCodingPanel {
 								this._model_document!,
 								{
 									selection: new vscode.Range(
-										this._model_document!.positionAt(positions[0]),
-										this._model_document!.positionAt(positions[1])
+										this._model_document!.positionAt(position[0]),
+										this._model_document!.positionAt(position[1])
 									),
 									viewColumn: vscode.ViewColumn.One
 								}

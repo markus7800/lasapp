@@ -7,7 +7,7 @@ def get_graph(program_ir: PPL_IR):
 
     random_stmts = program_ir.get_sample_nodes() + program_ir.get_factor_nodes()
 
-    edges = []
+    edges: list[tuple[SampleNode,SampleNode|FactorNode]] = []
 
     for r in random_stmts:
         marked: Set[CFGNode] = set()
@@ -48,3 +48,17 @@ def get_graph(program_ir: PPL_IR):
                     
 
     return random_stmts, edges
+
+import graphviz
+def model_graph_svg(random_stmts: list[SampleNode | FactorNode], edges: list[tuple[SampleNode,SampleNode|FactorNode]]):
+
+    dot = graphviz.Digraph('model', engine="dot")
+
+    for node in random_stmts:
+        label = node.get_source_location().source_text
+        dot.node(node.id, label)
+        
+    for x,y in edges:
+        dot.edge(x.id, y.id)
+
+    return dot.pipe(format='svg', encoding='utf-8')

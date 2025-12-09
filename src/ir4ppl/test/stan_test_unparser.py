@@ -27,3 +27,7 @@ for root, dir, files in os.walk(folder):
             sexpr = sexpdata.loads(stan_ast, true=None)
             sexpr = sym_to_str(sexpr)
             unparse(sexpr)
+            
+            ir = get_IR_for_stan(filename, stanc=stanc)
+            for node in ir.get_sample_nodes() + ir.get_factor_nodes():
+                print(node.get_source_location())

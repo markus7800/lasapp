@@ -20,6 +20,7 @@ import {
 	Position
 } from 'vscode-languageserver/node';
 import { exec, spawn } from 'node:child_process';
+import * as path from 'path';
 
 import {
 	TextDocument
@@ -50,7 +51,7 @@ let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
 let analysisPython = "";
-let analysisFile = "";
+let analysisDirectory = "";
 let analysisWd = "";
 let analysisSettings: AnalysisSettings;
 
@@ -58,7 +59,7 @@ connection.onInitialize((params: InitializeParams) => {
 	// console.log("Server onInitialize", params)
 	const capabilities = params.capabilities;
 	analysisPython = params.initializationOptions?.analysisPython;
-	analysisFile = params.initializationOptions?.analysisFile;
+	analysisDirectory = params.initializationOptions?.analysisDirectory;
 	analysisWd = params.initializationOptions?.analysisWd;
 	analysisSettings = params.initializationOptions?.analysisSettings;
 
@@ -96,6 +97,7 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 connection.onInitialized(() => {
+	console.log("Server initialised.")
 	if (hasConfigurationCapability) {
 		// Register for all configuration changes.
 		connection.client.register(DidChangeConfigurationNotification.type, undefined);
@@ -212,10 +214,18 @@ documents.onDidSave(async (e) => {
 // });
 
 
-function runPythonAnalysis(source: string): Promise<any[]> {
+function runAnalysis(source: string, ir4ppl: boolean): Promise<any[]> {
     return new Promise((resolve, reject) => {
 		try {
-			let args = [analysisFile];
+			let args = [];
+			if (ir4ppl) {
+				args.push(path.join(analysisDirectory, "analyse_ir4ppl.py"))
+				// TODO: replace with setting
+				let stanc = "/Users/markus/Documents/stanc3/_build/default/src/stanc/stanc.exe";
+				args.push(stanc)
+			} else {
+				args.push(path.join(analysisDirectory, "analyse.py"))
+			}
 			if (analysisSettings.constraint_verification) {
 				args.push("--constraint");
 			}
@@ -269,7 +279,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<Diagnos
 	const diagnostics: Diagnostic[] = [];
 
 	const text = textDocument.getText();
-	const result = await runPythonAnalysis(text);
+	const ir4ppl = textDocument.languageId == "stan";
+	console.log("textDocument.languageId", textDocument.languageId)
+	const result = await runAnalysis(text, ir4ppl);
 
 	result.forEach(violation => {
 		console.log(violation)

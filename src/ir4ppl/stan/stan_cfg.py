@@ -415,7 +415,7 @@ class StanFactorNode(FactorNode):
         self.syntaxnode = syntaxnode
         self.sexpr_to_node = sexpr_to_node
     def get_source_location(self) -> SourceLocation:
-        return SourceLocation(self.syntaxnode.sourcetext(), self.syntaxnode.position, self.syntaxnode.position)
+        return SourceLocation(self.syntaxnode.sourcetext(), self.syntaxnode.position, self.syntaxnode.end_position)
     def get_distribution(self) -> Distribution:
         match self.syntaxnode.sexpr:
             case ['stmt', ['TargetPE', ['expr', ['CondDistApp', [], [['name', name], _], [_, *args]], _]], *_]:
