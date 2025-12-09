@@ -44,7 +44,7 @@ def preproc_unsugar_tilde(sexpr):
                             [deepcopy(samplearg), *trunc_args
                         ]]],
                         ['emeta', [['loc', '<opaque>']]]],
-                    [['stmt', ['TargetPE', [['expr', ['FunApp', [], [['name', 'negative_infinity'], ['id_loc', '<opaque>']], []]], ['emeta', [['loc', '<opaque>']]]]]], ['smeta', [['loc', '<opaque>']]]],
+                    [['stmt', ['TargetPE', [['expr', ['FunApp', [], [['name', 'negative_infinity'], ['id_loc', '<opaque>']], []]], ['emeta', [['loc', '<opaque>']]]]]], ['smeta', smeta]],
                     []
                     ]],
                     ['smeta', [['loc', '<opaque>']]]

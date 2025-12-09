@@ -20,13 +20,9 @@ for root, dir, files in os.walk(folder):
                 continue
             count += 1
             
-            try:
-                ir = get_IR_for_stan(filename, stanc=stanc)
-                violations, can_be_analyzed = verify_constraints(ir)
-            except:
-                can_be_analyzed = False
-                violations = []
-
+            ir = get_IR_for_stan(filename, stanc=stanc)
+            violations, can_be_analyzed = verify_constraints(ir)
+            
             if can_be_analyzed:
                 can_be_analyzed_count += 1
                 print(bcolors.HEADER, filename, bcolors.ENDC, bcolors.OKGREEN, " OK", bcolors.ENDC, sep="")
