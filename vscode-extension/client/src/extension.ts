@@ -134,7 +134,7 @@ export async function activate(context: ExtensionContext) {
 
 
 	const lasappPython = await vscode.window.withProgress(
-		{ location: vscode.ProgressLocation.Window, title: "Preparing Python Lasapp server..." },
+		{ location: vscode.ProgressLocation.Notification, title: "Preparing Python Lasapp server..." },
 		async () => {
 			return await ensureVenv(context.asAbsolutePath(path.join('lasapp', 'src')));
 		}
@@ -146,7 +146,7 @@ export async function activate(context: ExtensionContext) {
 	await run("rm .pipe/tmp/*.stan || true", context.asAbsolutePath("."));
 
 	const lasappJuliaProject = await vscode.window.withProgress(
-		{ location: vscode.ProgressLocation.Window, title: "Preparing Julia Lasapp server..." },
+		{ location: vscode.ProgressLocation.Notification, title: "Preparing Julia Lasapp server..." },
 		async () => {
 			return await ensureJulia(context.asAbsolutePath(path.join('lasapp', 'src', 'jl')));
 		}

@@ -40,8 +40,8 @@
 	},
 	"scripts": {
 		"prepack": "npm run copy-lasapp",
-		"copy-lasapp": "rm -rf lasapp/src && cp -r ../src ./lasapp/src/",
-		"vscode:prepublish": "npm run compile",
+		"copy-lasapp": "mkdir -p lasapp && rm -rf lasapp/src && cp -r ../src ./lasapp/src/",
+		"vscode:prepublish": "npm run copy-lasapp; npm run compile",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
 		"lint": "eslint",

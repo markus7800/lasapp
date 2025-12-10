@@ -2,7 +2,13 @@
 
 # Language-Agnostic Static Analysis of Probabilistic Programs
 
-For replication package for [ASE2024 paper](https://dl.acm.org/doi/pdf/10.1145/3691620.3695031) see commit TODO.
+For replication package of [ASE2024 paper](https://dl.acm.org/doi/pdf/10.1145/3691620.3695031) see [580e2fe](https://github.com/lasapp/lasapp/tree/ASE2024).
+
+Since then, we have added a backend based on the CFG representation outlined in the [Appendix](https://zenodo.org/records/15857114/files/LASAPP_supplementary_material.pdf).
+
+We have implemented transpilations from Pyro and Stan to this CFG IR.
+
+To make LASAPP more usable, we also provide a rudimentary [VSCode extension](vscode-extension/README.md).
 
 Overview:
 ```
@@ -25,6 +31,11 @@ Overview:
 │     └── test_servers.sh                           # Test Python and Julia language server
 │
 ├── src/                                            # LASAPP source code
+│     ├── ir4ppl/                                   # Backend based on CFG intermediate represenation (IR)
+│     │     ├── analysis/                           # Static analyses implemented for CFG IR
+│     │     ├── ir4ppl/                             # Implementation of CFG IR
+│     │     ├── pyro/                               # Pyro transpilation to CFG IR
+│     │     └── stan/                               # Stan transpilation to CFG IR
 │     ├── jl/                                       # Julia language server
 │     │     ├── analysis/                           # Julia classical analysis backend
 │     │     ├── ast/                                # AST utilities
@@ -33,7 +44,7 @@ Overview:
 │     │     │     ├── gen.jl                        # Gen.jl bindings
 │     │     │     └── turing.jl                     # Turing.jl bindings
 │     │     └── test/                               # Unit tests
-│     └── py/                                       # Python language server
+│     ├── py/                                       # Python language server
 │     │     ├── analysis/                           # Python classical analysis backend
 │     │     ├── ast_utils/                          # AST utilities
 │     │     ├── ppls/                               # Python PPL bindings
