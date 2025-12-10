@@ -85,17 +85,21 @@ function updateServer() {
 }
 
 function get_model_graph(context: ExtensionContext, analysisPython: string, document: vscode.TextDocument) :Promise<any> {
-	let analysisWd = context.asAbsolutePath(".");
-	let args = []
-	if (document.languageId == "stan") {
-		args.push(context.asAbsolutePath(path.join("client", "src", "graph_ir4ppl.py")));
-		// TODO: replace with setting
-		let stanc = "/Users/markus/Documents/stanc3/_build/default/src/stanc/stanc.exe";
-		args.push(stanc)
-	} else {
-		args.push(context.asAbsolutePath(path.join("client", "src", "graph.py")));
-	}
 	return new Promise((resolve, reject) => {
+		let analysisWd = context.asAbsolutePath(".");
+		let args = []
+		if (document.languageId == "stan") {
+			args.push(context.asAbsolutePath(path.join("client", "src", "graph_ir4ppl.py")));
+			let stanc: string = vscode.workspace.getConfiguration('lasapp.stanc').get("path", "")
+			if (stanc == "") {
+				reject(new Error("stanc path not set."))
+			}
+
+			args.push(stanc)
+		} else {
+			args.push(context.asAbsolutePath(path.join("client", "src", "graph.py")));
+		}
+
 		const py = spawn(analysisPython, args, {cwd: analysisWd});
 
 		let stdout = "";
@@ -138,8 +142,8 @@ export async function activate(context: ExtensionContext) {
 	console.log(lasappPython)
 
 	// clean up from previous runs
-	await run("rm .pipe/tmp/*.hpp", context.asAbsolutePath("."));
-	await run("rm .pipe/tmp/*.stan", context.asAbsolutePath("."));
+	await run("rm .pipe/tmp/*.hpp || true", context.asAbsolutePath("."));
+	await run("rm .pipe/tmp/*.stan || true", context.asAbsolutePath("."));
 
 	const lasappJuliaProject = await vscode.window.withProgress(
 		{ location: vscode.ProgressLocation.Window, title: "Preparing Julia Lasapp server..." },
@@ -234,6 +238,8 @@ export async function activate(context: ExtensionContext) {
 			CatCodingPanel.createOrShow(context.extensionUri, analysisSettings, onSettingsChanged);
 			get_model_graph(context, lasappPython, document).then((result) => {
 				CatCodingPanel.currentPanel?.updateModel(document, result["svg"], result["rv_positions"]);
+			}).catch((reason) => {
+				vscode.window.showErrorMessage(reason.message)
 			})
 			updateServer();
 		}

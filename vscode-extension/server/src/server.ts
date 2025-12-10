@@ -54,6 +54,7 @@ let analysisPython = "";
 let analysisDirectory = "";
 let analysisWd = "";
 let analysisSettings: AnalysisSettings;
+let stancPath = "";
 
 connection.onInitialize((params: InitializeParams) => {
 	// console.log("Server onInitialize", params)
@@ -215,13 +216,16 @@ documents.onDidSave(async (e) => {
 
 
 function runAnalysis(source: string, ir4ppl: boolean): Promise<any[]> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
 		try {
 			let args = [];
 			if (ir4ppl) {
 				args.push(path.join(analysisDirectory, "analyse_ir4ppl.py"))
-				// TODO: replace with setting
-				let stanc = "/Users/markus/Documents/stanc3/_build/default/src/stanc/stanc.exe";
+				let cfg = await connection.workspace.getConfiguration("lasapp.stanc")
+				let stanc = cfg.path
+				if (stanc == "") {
+					reject(new Error("stanc path not set."))
+				}
 				args.push(stanc)
 			} else {
 				args.push(path.join(analysisDirectory, "analyse.py"))
