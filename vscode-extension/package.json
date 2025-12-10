@@ -55,10 +55,7 @@
 		"eslint": "^9.13.0",
 		"mocha": "^10.3.0",
 		"typescript": "^5.9.2",
-		"typescript-eslint": "^8.39.0"
-	},
-	"dependencies": {
-		"vscode": "^1.1.37",
-		"vscode-jsonrpc": "^8.2.1"
+		"typescript-eslint": "^8.39.0",
+		"vscode": "^1.1.37"
 	}
 }
