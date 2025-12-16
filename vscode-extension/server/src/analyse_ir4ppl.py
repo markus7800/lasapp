@@ -4,6 +4,7 @@ sys.path.insert(0, 'lasapp/src/ir4ppl')
 import argparse
 from stan.stan_cfg import *
 from analysis.absolute_continuity_checker import check_ac, check_ac_guide
+from analysis.funnel_detection import get_funnel_relationships
 from analysis.constraint_verification import verify_constraints
 from analysis.random_control_flow import check_for_random_control_flow
 import json
@@ -73,7 +74,10 @@ if __name__ == '__main__':
         except: pass
         
     if args.funnel:
-        pass # not supported yet
+        try:
+            warnings += get_funnel_relationships(ir)
+        except:
+            pass
         
     
     out = []

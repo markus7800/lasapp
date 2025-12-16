@@ -10,7 +10,7 @@ class FunnelWarning:
         self.scale_rv = scale_rv
 
     def __str__(self):
-        return f"Funnel detected: variable '{self.funnel_rv.name}' depends on scale parameter from variable '{self.scale_rv.name}', which may lead to poor inference performance."
+        return f"Funnel detected: Scale parameter of '{self.funnel_rv.name}' depends on variable '{self.scale_rv.name}', which may lead to poor inference performance."
 
     def get_diagnostic_ranges(self) -> list[tuple[int,int]]:
         return [(self.funnel_rv.node.first_byte, self.funnel_rv.node.last_byte), (self.scale_rv.node.first_byte, self.scale_rv.node.last_byte)]
@@ -38,7 +38,7 @@ def get_funnel_relationships(program: lasapp.ProbabilisticProgram, model: lasapp
                             if dep.node_id in random_variables:
                                 # if node is random variable, we do not continue recursion and add edge to graph
                                 dep_rv = random_variables[dep.node_id]
-                                funnel_warnings.append(FunnelWarning(dep_rv,rv))
+                                funnel_warnings.append(FunnelWarning(rv,dep_rv))
                             else:
                                 queue.append(dep)
                             marked.add(dep.node_id)

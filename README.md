@@ -10,7 +10,9 @@ We have implemented transpilations from Pyro and Stan to this CFG IR.
 
 To make LASAPP more usable, we also provide a rudimentary [VSCode extension](vscode-extension/README.md).
 
-Overview:
+![](vscode-extension/vscode-ext-screenshot.png)
+
+Files Overview:
 ```
 .  
 ├── evaluation/                                     # Probabilistic Program Benchmark Dataset

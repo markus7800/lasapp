@@ -285,21 +285,26 @@ async function validateTextDocument(textDocument: TextDocument): Promise<Diagnos
 	const text = textDocument.getText();
 	const ir4ppl = textDocument.languageId == "stan";
 	console.log("textDocument.languageId", textDocument.languageId)
-	const result = await runAnalysis(text, ir4ppl);
 
-	result.forEach(violation => {
-		console.log(violation)
-		const diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Warning,
-			range: {
-				start: textDocument.positionAt(violation.start_index),
-				end: textDocument.positionAt(violation.end_index),
-			},
-			message: violation.description,
-			source: 'lasapp'
-		};
-		diagnostics.push(diagnostic);
+	await runAnalysis(text, ir4ppl).then((result) => {
+		result.forEach(violation => {
+			console.log(violation)
+			const diagnostic: Diagnostic = {
+				severity: DiagnosticSeverity.Warning,
+				range: {
+					start: textDocument.positionAt(violation.start_index),
+					end: textDocument.positionAt(violation.end_index),
+				},
+				message: violation.description,
+				source: 'lasapp'
+			};
+			diagnostics.push(diagnostic);
+		});
+	}).catch((reason) => {
+		console.log("validateTextDocument failed:", reason.message)
+		// vscode.window.showErrorMessage(reason.message)
 	});
+
 	return diagnostics;
 }
 

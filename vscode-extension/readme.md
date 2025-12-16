@@ -1,6 +1,8 @@
 
 # LASAPP VSCode Extension
 
+![](vscode-ext-screenshot.png)
+
 ## Installation
 ```
 npm install -g @vscode/vsce
@@ -14,8 +16,10 @@ Select `lasapp-1.0.0.vsix`.
 ### Requirements to use Backends
 
 - Python
+  - Python 3.11
   - [Python VSCode Extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
 - Julia
+  - Julia 1.9
   - [Julia VSCode Extension](https://marketplace.visualstudio.com/items?itemName=julialang.language-julia)
 - Stan
   - [Stan VSCode Extension](https://marketplace.visualstudio.com/items?itemName=ivan-bocharov.stan-vscode)
